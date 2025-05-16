@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -15,7 +15,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleQuickLogin = (role: "USER" | "PARTNER" | "ADMIN") => {
+  const handleQuickLogin = async (role: "USER" | "PARTNER" | "ADMIN") => {
     let testEmail = "";
     
     switch (role) {
@@ -31,7 +31,7 @@ const LoginPage = () => {
     }
     
     setEmail(testEmail);
-    setPassword("password123"); // In real app, you wouldn't do this
+    setPassword("password123");
   };
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
