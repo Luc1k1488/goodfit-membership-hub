@@ -6,6 +6,7 @@ import { FitnessClass } from "@/types";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useApp } from "@/context/AppContext";
+import { MapPin } from "lucide-react";
 
 interface ClassCardProps {
   fitnessClass: FitnessClass;
@@ -32,38 +33,48 @@ export function ClassCard({ fitnessClass, gym, showBookButton = true }: ClassCar
   };
   
   return (
-    <Card className="overflow-hidden rounded-xl shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex flex-col space-y-2">
-          <div className="flex justify-between items-center">
-            <h3 className="font-semibold">{fitnessClass.title}</h3>
-            <Badge className={`${isFullyBooked ? 'bg-red-500' : 'bg-goodfit-primary'}`}>
-              {isFullyBooked ? 'Заполнено' : `${spacesLeft} мест`}
-            </Badge>
+    <Card className="overflow-hidden rounded-xl shadow-sm mb-3 bg-card">
+      <div className="flex p-4">
+        <div className="w-1/4 mr-3">
+          <div className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
+            <img 
+              src={fitnessClass.category === "Йога" 
+                ? "/lovable-uploads/yoga.jpg" 
+                : "/lovable-uploads/fitness.jpg"} 
+              alt={fitnessClass.title}
+              className="w-full h-full object-cover"
+            />
           </div>
-          
-          {gym && (
-            <p className="text-sm text-gray-500">{gym.name}</p>
-          )}
-          
-          <div className="text-sm text-gray-700">
-            <p>{formattedDate}</p>
-            <p>{formattedTime}</p>
-          </div>
-          
-          <p className="text-sm text-gray-500">Инструктор: {fitnessClass.instructor}</p>
-          
-          <Badge variant="outline" className="w-fit">
-            {fitnessClass.category}
-          </Badge>
         </div>
-      </CardContent>
+        <div className="w-3/4">
+          <div className="flex flex-col space-y-1">
+            <h3 className="font-bold text-lg">{fitnessClass.title}</h3>
+            <p className="text-sm text-blue-500">{formattedTime}</p>
+            
+            {gym && (
+              <p className="text-sm text-muted-foreground flex items-center">
+                <MapPin size={14} className="mr-1" />
+                {gym.name}
+              </p>
+            )}
+            
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-sm text-muted-foreground">{fitnessClass.instructor}</p>
+              {isFullyBooked ? (
+                <Badge className="bg-red-500 text-white">Заполнено</Badge>
+              ) : (
+                <Badge className="bg-green-500 text-white">{spacesLeft} мест</Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
       
       {showBookButton && (
-        <CardFooter className="px-4 py-3 bg-gray-50 flex justify-between">
+        <CardFooter className="px-4 py-3 flex justify-between border-t">
           <Button
             variant={isFullyBooked ? "outline" : "default"}
-            className={isFullyBooked ? "" : "bg-goodfit-primary hover:bg-goodfit-dark w-full rounded-xl"}
+            className={isFullyBooked ? "" : "bg-blue-500 hover:bg-blue-600 text-white w-full rounded-xl py-5"}
             disabled={isFullyBooked || !user}
             onClick={handleBookClass}
           >

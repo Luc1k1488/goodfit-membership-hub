@@ -1,489 +1,389 @@
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Header } from "@/components/Header";
-import { useApp } from "@/context/AppContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
-import { User } from "@/types";
-import { supabase } from "@/lib/supabaseClient";
-import { 
-  Users, 
-  Home, 
-  Calendar, 
-  DollarSign, 
-  TrendingUp, 
-  Star, 
-  Search, 
-  CheckCircle, 
-  XCircle, 
-  Clock,
-  Activity,
-  Gym,
-  Plus
-} from "lucide-react";
+import { Header } from "@/components/Header";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Users,
+  Dumbbell,
+  CalendarClock,
+  CreditCard,
+  Loader2,
+  Search,
+  Building2
+} from "lucide-react";
+import { useApp } from "@/context/AppContext";
+import { supabase } from "@/lib/supabaseClient";
+import { User, Booking } from "@/types";
 
 const AdminDashboardPage = () => {
-  const { gyms, updateGym } = useApp();
-  const { currentUser } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalGyms: 0,
-    totalClasses: 0,
-    totalRevenue: 0,
-    activeSubscriptions: 0,
-    pendingApprovals: 0
-  });
+  const { currentUser, isLoading } = useAuth();
+  const { gyms, classes, subscriptions } = useApp();
+  const navigate = useNavigate();
   
+  const [activeTab, setActiveTab] = useState("overview");
+  const [users, setUsers] = useState<User[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  // Check if user is admin
+  useEffect(() => {
+    if (!isLoading) {
+      if (!currentUser) {
+        navigate("/login");
+        return;
+      }
+      
+      if (currentUser.role !== "ADMIN") {
+        if (currentUser.role === "PARTNER") {
+          navigate("/partner-dashboard");
+        } else {
+          navigate("/profile");
+        }
+      }
+    }
+  }, [currentUser, isLoading, navigate]);
+  
+  // Load admin data
   useEffect(() => {
     const fetchData = async () => {
+      if (currentUser?.role !== "ADMIN") return;
+      
       try {
-        // Fetch users
+        setIsDataLoading(true);
+        
+        // Fetch all users
         const { data: usersData, error: usersError } = await supabase
           .from('users')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (usersError) {
-          console.error('Error fetching users:', usersError);
-        } else if (usersData) {
-          setUsers(usersData.map(user => ({
-            id: user.id,
-            name: user.name || '',
-            email: user.email || '',
-            phone: user.phone || '',
-            role: user.role as "USER" | "PARTNER" | "ADMIN",
-            createdAt: user.created_at,
-            profileImage: user.profile_image || '/placeholder.svg'
-          })));
+          .select('*');
           
-          setStats(prev => ({
-            ...prev,
-            totalUsers: usersData.length
-          }));
-        }
+        if (usersError) throw usersError;
         
-        // Fetch bookings
+        // Fetch all bookings
         const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
-          .select(`
-            *,
-            classes:class_id(*),
-            gyms:gym_id(*),
-            users:user_id(*)
-          `)
-          .order('date_time', { ascending: false });
-        
-        if (bookingsError) {
-          console.error('Error fetching bookings:', bookingsError);
-        } else if (bookingsData) {
-          setBookings(bookingsData);
-        }
-        
-        // Get total gyms
-        setStats(prev => ({
-          ...prev,
-          totalGyms: gyms.length
-        }));
-        
-        // Get total classes
-        const { count: classCount, error: classError } = await supabase
-          .from('classes')
-          .select('*', { count: 'exact', head: true });
+          .select('*, classes:class_id(*), gyms:gym_id(*), users:user_id(*)');
           
-        if (!classError) {
-          setStats(prev => ({
-            ...prev,
-            totalClasses: classCount || 0
-          }));
-        }
+        if (bookingsError) throw bookingsError;
         
-        // Get active subscriptions
-        const { count: subscriptionCount, error: subscriptionError } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .not('subscription_id', 'is', null);
-          
-        if (!subscriptionError) {
-          setStats(prev => ({
-            ...prev,
-            activeSubscriptions: subscriptionCount || 0
-          }));
-        }
-        
-        // Get total revenue (mock data for now)
-        setStats(prev => ({
-          ...prev,
-          totalRevenue: 1250000
+        const formattedUsers = usersData.map(user => ({
+          id: user.id,
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          role: user.role as "USER" | "PARTNER" | "ADMIN",
+          createdAt: user.created_at,
+          profileImage: user.profile_image || '/placeholder.svg',
+          subscriptionId: user.subscription_id
         }));
         
-        // Get pending approvals (mock data)
-        setStats(prev => ({
-          ...prev,
-          pendingApprovals: 5
+        const formattedBookings = bookingsData.map(booking => ({
+          id: booking.id,
+          userId: booking.user_id,
+          classId: booking.class_id,
+          gymId: booking.gym_id,
+          status: booking.status,
+          dateTime: booking.date_time,
+          userName: booking.users?.name || '',
+          className: booking.classes?.title || '',
+          gymName: booking.gyms?.name || ''
         }));
         
+        setUsers(formattedUsers);
+        setBookings(formattedBookings);
       } catch (error) {
         console.error("Error fetching admin data:", error);
+      } finally {
+        setTimeout(() => {
+          setIsDataLoading(false);
+        }, 500);
       }
     };
     
     fetchData();
-  }, [gyms]);
+  }, [currentUser]);
+
+  if (isLoading || isDataLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-2">Загрузка панели администратора...</p>
+      </div>
+    );
+  }
   
-  // Filter gyms based on search term
-  const filteredGyms = gyms.filter(gym => 
-    gym.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    gym.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    gym.category.some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-  
-  // Filter users based on search term
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    return null;
+  }
+
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="pb-16">
       <Header>
         <h1 className="text-xl font-bold">Панель администратора</h1>
       </Header>
       
-      <div className="container px-4 py-6">
-        {/* Dashboard Tabs */}
+      <div className="p-4">
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4 flex flex-col items-center justify-center">
+              <Users className="h-8 w-8 text-blue-500 mb-2" />
+              <CardTitle className="text-xl">{users.length}</CardTitle>
+              <p className="text-sm text-muted-foreground">Пользователи</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 flex flex-col items-center justify-center">
+              <Building2 className="h-8 w-8 text-orange-500 mb-2" />
+              <CardTitle className="text-xl">{gyms.length}</CardTitle>
+              <p className="text-sm text-muted-foreground">Залы</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 flex flex-col items-center justify-center">
+              <CalendarClock className="h-8 w-8 text-green-500 mb-2" />
+              <CardTitle className="text-xl">{classes.length}</CardTitle>
+              <p className="text-sm text-muted-foreground">Занятия</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 flex flex-col items-center justify-center">
+              <CreditCard className="h-8 w-8 text-purple-500 mb-2" />
+              <CardTitle className="text-xl">{subscriptions.length}</CardTitle>
+              <p className="text-sm text-muted-foreground">Абонементы</p>
+            </CardContent>
+          </Card>
+        </div>
+        
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid grid-cols-4 mb-4">
             <TabsTrigger value="overview">Обзор</TabsTrigger>
-            <TabsTrigger value="gyms">Залы</TabsTrigger>
             <TabsTrigger value="users">Пользователи</TabsTrigger>
+            <TabsTrigger value="gyms">Залы</TabsTrigger>
             <TabsTrigger value="bookings">Записи</TabsTrigger>
           </TabsList>
           
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center">
-                    <Users className="h-8 w-8 text-goodfit-primary mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Пользователей</p>
-                      <p className="text-2xl font-bold">{stats.totalUsers}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center">
-                    <Home className="h-8 w-8 text-goodfit-secondary mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Залов</p>
-                      <p className="text-2xl font-bold">{stats.totalGyms}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center">
-                    <Calendar className="h-8 w-8 text-amber-500 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Занятий</p>
-                      <p className="text-2xl font-bold">{stats.totalClasses}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center">
-                    <DollarSign className="h-8 w-8 text-emerald-500 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Доход</p>
-                      <p className="text-2xl font-bold">₽{(stats.totalRevenue / 1000).toFixed(0)}K</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Поиск..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
+          </div>
+          
+          <TabsContent value="overview" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Последние регистрации</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {users.slice(0, 5).map(user => (
+                  <div key={user.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium">{user.name || 'Пользователь'}</p>
+                        <p className="text-sm text-muted-foreground">{user.phone}</p>
+                      </div>
+                    </div>
+                    <Badge>{user.role}</Badge>
+                  </div>
+                ))}
+                
+                <Button variant="outline" className="w-full mt-4">
+                  Смотреть всех пользователей
+                </Button>
+              </CardContent>
+            </Card>
             
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Последние записи на занятия</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {bookings.slice(0, 5).map(booking => (
+                  <div key={booking.id} className="py-2 border-b last:border-0">
+                    <div className="flex justify-between">
+                      <p className="font-medium">{booking.className}</p>
+                      <Badge 
+                        className={
+                          booking.status === 'BOOKED' ? 'bg-green-500' : 
+                          booking.status === 'COMPLETED' ? 'bg-blue-500' : 
+                          'bg-red-500'
+                        }
+                      >
+                        {booking.status === 'BOOKED' ? 'Активна' : 
+                         booking.status === 'COMPLETED' ? 'Завершена' : 
+                         'Отменена'}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{booking.userName}</span>
+                      <span className="text-muted-foreground">{booking.gymName}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(booking.dateTime).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+                
+                <Button variant="outline" className="w-full mt-4">
+                  Смотреть все записи
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="users" className="space-y-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle>Статистика подписок</CardTitle>
+                <CardTitle className="text-lg">Пользователи ({users.length})</CardTitle>
               </CardHeader>
-              <CardContent className="pb-4">
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <Activity className="h-5 w-5 text-muted-foreground mr-2" />
-                    <span className="text-sm text-muted-foreground">Активные подписки:</span>
-                    <span className="ml-auto font-medium">{stats.activeSubscriptions}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="h-5 w-5 text-muted-foreground mr-2" />
-                    <span className="text-sm text-muted-foreground">Ожидают одобрения:</span>
-                    <span className="ml-auto font-medium">{stats.pendingApprovals}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Популярные залы</CardTitle>
-              </CardHeader>
-              <CardContent className="pb-4">
-                <div className="space-y-4">
-                  {gyms.slice(0, 3).map((gym) => (
-                    <div key={gym.id} className="flex items-center">
-                      <div className="h-10 w-10 rounded bg-muted mr-3 overflow-hidden">
-                        <img 
-                          src={gym.mainImage} 
-                          alt={gym.name} 
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{gym.name}</p>
-                        <p className="text-sm text-muted-foreground">{gym.city}</p>
-                      </div>
-                      <div className="flex items-center">
-                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                        <span className="ml-1 text-sm">{gym.rating.toFixed(1)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Gyms Tab */}
-          <TabsContent value="gyms" className="space-y-4 mt-4">
-            <div className="flex mb-4">
-              <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Поиск залов..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Button className="ml-2" variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                Добавить зал
-              </Button>
-            </div>
-            
-            <Card>
-              <CardContent className="p-0 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Название</TableHead>
-                      <TableHead>Город</TableHead>
-                      <TableHead>Категория</TableHead>
-                      <TableHead>Рейтинг</TableHead>
-                      <TableHead>Статус</TableHead>
-                      <TableHead>Действия</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredGyms.map((gym) => (
-                      <TableRow key={gym.id}>
-                        <TableCell className="font-medium">{gym.name}</TableCell>
-                        <TableCell>{gym.city}</TableCell>
-                        <TableCell>{gym.category.join(', ')}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
-                            {gym.rating.toFixed(1)}
+              <CardContent>
+                {users
+                  .filter(user => 
+                    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    user.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map(user => (
+                    <div key={user.id} className="py-3 border-b last:border-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                            {user.name.charAt(0).toUpperCase()}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                            Активен
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="outline">
-                              Просмотр
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              Изменить
-                            </Button>
+                          <div>
+                            <p className="font-medium">{user.name || 'Пользователь'}</p>
+                            <p className="text-sm text-muted-foreground">{user.phone}</p>
+                            {user.email && <p className="text-sm text-muted-foreground">{user.email}</p>}
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Users Tab */}
-          <TabsContent value="users" className="space-y-4 mt-4">
-            <div className="flex mb-4">
-              <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Поиск пользователей..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <Card>
-              <CardContent className="p-0 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Имя</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Телефон</TableHead>
-                      <TableHead>Роль</TableHead>
-                      <TableHead>Дата регистрации</TableHead>
-                      <TableHead>Действия</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center">
-                            <div className="h-8 w-8 rounded-full bg-muted mr-2 overflow-hidden">
-                              <img 
-                                src={user.profileImage} 
-                                alt={user.name || 'User'} 
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                            {user.name || 'Нет имени'}
-                          </div>
-                        </TableCell>
-                        <TableCell>{user.email || 'Нет email'}</TableCell>
-                        <TableCell>{user.phone || 'Нет телефона'}</TableCell>
-                        <TableCell>
-                          <Badge variant={
-                            user.role === 'ADMIN' ? 'default' :
-                            user.role === 'PARTNER' ? 'outline' : 'secondary'
-                          }>
-                            {user.role === 'ADMIN' ? 'Админ' :
-                             user.role === 'PARTNER' ? 'Партнер' : 'Клиент'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <Button size="sm" variant="outline">
-                            Действия
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Bookings Tab */}
-          <TabsContent value="bookings" className="space-y-4 mt-4">
-            <div className="flex mb-4">
-              <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Поиск записей..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <Card>
-              <CardContent className="p-0 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Пользователь</TableHead>
-                      <TableHead>Зал</TableHead>
-                      <TableHead>Занятие</TableHead>
-                      <TableHead>Дата и время</TableHead>
-                      <TableHead>Статус</TableHead>
-                      <TableHead>Действия</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {bookings.slice(0, 10).map((booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell className="font-medium">
-                          {booking.users?.name || 'Нет имени'}
-                        </TableCell>
-                        <TableCell>{booking.gyms?.name || 'Неизвестный зал'}</TableCell>
-                        <TableCell>{booking.classes?.title || 'Неизвестное занятие'}</TableCell>
-                        <TableCell>
-                          {booking.classes ? 
-                            new Date(booking.classes.start_time).toLocaleString() :
-                            'Нет данных'
+                        </div>
+                        <Badge 
+                          className={
+                            user.role === 'ADMIN' ? 'bg-purple-500' : 
+                            user.role === 'PARTNER' ? 'bg-blue-500' : 
+                            'bg-green-500'
                           }
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={
-                            booking.status === 'ACTIVE' ? 'outline' :
-                            booking.status === 'COMPLETED' ? 'default' : 'secondary'
-                          } className={
-                            booking.status === 'ACTIVE' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-                            booking.status === 'COMPLETED' ? '' : ''
-                          }>
-                            {booking.status === 'ACTIVE' ? 'Активна' :
-                             booking.status === 'COMPLETED' ? 'Завершена' : 'Отменена'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="outline" className="w-8 h-8 p-0">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                            </Button>
-                            <Button size="sm" variant="outline" className="w-8 h-8 p-0">
-                              <XCircle className="h-4 w-4 text-red-500" />
-                            </Button>
+                        >
+                          {user.role}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-end gap-2 mt-2">
+                        <Button size="sm" variant="outline">Редактировать</Button>
+                        <Button size="sm" variant="destructive">Удалить</Button>
+                      </div>
+                    </div>
+                  ))
+                }
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="gyms" className="space-y-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Залы ({gyms.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {gyms
+                  .filter(gym => 
+                    gym.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    gym.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    gym.city.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map(gym => (
+                    <div key={gym.id} className="py-3 border-b last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 overflow-hidden rounded">
+                          <img 
+                            src={gym.mainImage} 
+                            alt={gym.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between">
+                            <p className="font-medium">{gym.name}</p>
+                            <p className="text-sm">★ {gym.rating.toFixed(1)}</p>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          <p className="text-sm text-muted-foreground">{gym.address}</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {gym.category?.slice(0, 2).map((cat, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">
+                                {cat}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2 mt-2">
+                        <Button size="sm" variant="outline">Редактировать</Button>
+                        <Button size="sm" variant="destructive">Удалить</Button>
+                      </div>
+                    </div>
+                  ))
+                }
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="bookings" className="space-y-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Записи на занятия ({bookings.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {bookings
+                  .filter(booking => 
+                    booking.className?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    booking.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    booking.gymName?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map(booking => (
+                    <div key={booking.id} className="py-3 border-b last:border-0">
+                      <div className="flex justify-between">
+                        <p className="font-medium">{booking.className}</p>
+                        <Badge 
+                          className={
+                            booking.status === 'BOOKED' ? 'bg-green-500' : 
+                            booking.status === 'COMPLETED' ? 'bg-blue-500' : 
+                            'bg-red-500'
+                          }
+                        >
+                          {booking.status === 'BOOKED' ? 'Активна' : 
+                           booking.status === 'COMPLETED' ? 'Завершена' : 
+                           'Отменена'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Клиент: {booking.userName}</span>
+                        <span className="text-muted-foreground">Зал: {booking.gymName}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Дата: {new Date(booking.dateTime).toLocaleString()}
+                      </p>
+                      <div className="flex justify-end gap-2 mt-2">
+                        <Button size="sm" variant="outline">Изменить статус</Button>
+                        <Button size="sm" variant="destructive">Отменить</Button>
+                      </div>
+                    </div>
+                  ))
+                }
               </CardContent>
             </Card>
           </TabsContent>

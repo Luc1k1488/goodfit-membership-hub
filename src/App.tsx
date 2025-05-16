@@ -1,6 +1,6 @@
 
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster as Sonner } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -17,8 +17,10 @@ import RegisterPage from "./pages/RegisterPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import PartnerDashboardPage from "./pages/PartnerDashboardPage";
+import BookingPage from "./pages/BookingPage";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./context/AuthContext";
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +56,7 @@ const AppRoutes = () => {
       <Route path="/gyms" element={<GymsPage />} />
       <Route path="/gyms/:id" element={<GymDetailPage />} />
       <Route path="/classes" element={<ClassesPage />} />
+      <Route path="/booking/:gymId/:classId" element={<BookingPage />} />
       <Route path="/subscriptions" element={<SubscriptionsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
@@ -86,27 +89,49 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <AppProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <div className="flex flex-col min-h-screen pb-16 bg-background text-foreground">
-                <main className="flex-1">
-                  <AppRoutes />
-                </main>
-                <BottomNavBar />
-              </div>
-            </BrowserRouter>
-          </TooltipProvider>
-        </AppProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Register PWA installation effect
+  useEffect(() => {
+    const registerBeforeInstallPrompt = () => {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later
+        // deferredPrompt = e;
+        console.log('App can be installed, showing prompt');
+      });
+    };
+
+    registerBeforeInstallPrompt();
+
+    // Check if app is installed
+    window.addEventListener('appinstalled', (event) => {
+      console.log('GoodFit PWA was installed');
+    });
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner position="top-center" />
+              <BrowserRouter>
+                <div className="flex flex-col min-h-screen pb-16 bg-background text-foreground">
+                  <main className="flex-1">
+                    <AppRoutes />
+                  </main>
+                  <BottomNavBar />
+                </div>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AppProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

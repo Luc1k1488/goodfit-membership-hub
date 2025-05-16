@@ -1,14 +1,14 @@
 
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Header } from "@/components/Header";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
 
 const LoginPage = () => {
   const [phone, setPhone] = useState("");
@@ -95,15 +95,20 @@ const LoginPage = () => {
               
               <Button
                 type="submit"
-                className="w-full bg-goodfit-primary hover:bg-goodfit-dark rounded-xl py-6"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-6"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Отправка..." : "Получить код"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Отправка...
+                  </>
+                ) : "Получить код"}
               </Button>
               
               <div className="text-center text-sm">
                 Нет аккаунта?{" "}
-                <Link to="/register" className="text-goodfit-primary hover:underline">
+                <Link to="/register" className="text-blue-500 hover:underline">
                   Зарегистрироваться
                 </Link>
               </div>
@@ -119,8 +124,8 @@ const LoginPage = () => {
                     onChange={setOtp}
                     render={({ slots }) => (
                       <InputOTPGroup>
-                        {slots.map((slot, index) => (
-                          <InputOTPSlot key={index} {...slot} />
+                        {slots.map((slot) => (
+                          <InputOTPSlot key={slot.key} {...slot} />
                         ))}
                       </InputOTPGroup>
                     )}
@@ -133,10 +138,15 @@ const LoginPage = () => {
               
               <Button
                 type="submit"
-                className="w-full bg-goodfit-primary hover:bg-goodfit-dark rounded-xl py-6"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-6"
                 disabled={isSubmitting || otp.length < 6}
               >
-                {isSubmitting ? "Проверка..." : "Войти"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Проверка...
+                  </>
+                ) : "Войти"}
               </Button>
               
               <div className="text-center text-sm">
@@ -144,7 +154,7 @@ const LoginPage = () => {
                   variant="link"
                   type="button"
                   onClick={() => setShowOtpInput(false)}
-                  className="text-goodfit-primary p-0"
+                  className="text-blue-500 p-0"
                 >
                   Изменить номер телефона
                 </Button>
@@ -165,7 +175,7 @@ const LoginPage = () => {
                       setIsSubmitting(false);
                     }
                   }}
-                  className="text-goodfit-primary p-0"
+                  className="text-blue-500 p-0"
                   disabled={isSubmitting}
                 >
                   Отправить код повторно

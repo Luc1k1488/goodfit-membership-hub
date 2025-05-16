@@ -6,10 +6,10 @@ export function Footer() {
     <footer className="bg-background border-t py-6 px-4 text-center text-sm text-muted-foreground mb-16">
       <p>&copy; {new Date().getFullYear()} GoodFit. Все права защищены.</p>
       <div className="flex justify-center space-x-4 mt-2">
-        <Link to="/terms" className="hover:text-goodfit-primary">
+        <Link to="/terms" className="hover:text-blue-500">
           Условия сервиса
         </Link>
-        <Link to="/privacy" className="hover:text-goodfit-primary">
+        <Link to="/privacy" className="hover:text-blue-500">
           Политика конфиденциальности
         </Link>
       </div>

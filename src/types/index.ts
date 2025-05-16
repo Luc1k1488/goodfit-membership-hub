@@ -71,10 +71,18 @@ export interface Booking {
   userId: string;
   classId: string;
   gymId: string;
-  className: string;
-  gymName: string;
   status: 'BOOKED' | 'COMPLETED' | 'CANCELLED';
   dateTime: string;
+  createdAt?: string;
+  className?: string;
+  gymName?: string;
+  class?: FitnessClass;
+  gym?: {
+    id: string;
+    name: string;
+    city: string;
+    mainImage: string;
+  };
 }
 
 // Review types

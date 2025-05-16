@@ -1,25 +1,27 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Gym, Class, Subscription, User, Booking } from "@/types";
+import { Gym, FitnessClass, Subscription, User, Booking } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
 
 type AppContextType = {
   gyms: Gym[];
-  classes: Class[];
+  classes: FitnessClass[];
   subscriptions: Subscription[];
   filteredGyms: Gym[];
+  user: User | null;
+  bookings: Booking[];
   getGymById: (id: string) => Gym | undefined;
-  getGymClasses: (gymId: string) => Promise<Class[]>;
+  getClassById: (id: string) => FitnessClass | undefined;
+  getGymClasses: (gymId: string) => Promise<FitnessClass[]>;
   filterGyms: (filters: { city?: string, category?: string[], search?: string }) => void;
   bookClass: (classId: string, gymId: string) => Promise<boolean>;
   getUserBookings: () => Promise<Booking[]>;
   cancelBooking: (bookingId: string) => Promise<boolean>;
   addGym: (gym: Omit<Gym, "id" | "rating" | "reviewCount">) => Promise<Gym>;
   updateGym: (id: string, updates: Partial<Gym>) => Promise<Gym>;
-  addClass: (classData: Omit<Class, "id" | "bookedCount">) => Promise<Class>;
-  updateClass: (id: string, updates: Partial<Class>) => Promise<Class>;
+  addClass: (classData: Omit<FitnessClass, "id" | "bookedCount">) => Promise<FitnessClass>;
+  updateClass: (id: string, updates: Partial<FitnessClass>) => Promise<FitnessClass>;
   deleteClass: (id: string) => Promise<boolean>;
 };
 
@@ -40,9 +42,11 @@ interface AppProviderProps {
 export const AppProvider = ({ children }: AppProviderProps) => {
   const { currentUser } = useAuth();
   const [gyms, setGyms] = useState<Gym[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
+  const [classes, setClasses] = useState<FitnessClass[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [filteredGyms, setFilteredGyms] = useState<Gym[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const user = currentUser;
 
   // Fetch initial data
   useEffect(() => {
@@ -65,7 +69,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
           images: gym.images,
           features: gym.features,
           category: gym.category,
-          location: { lat: 0, lng: 0 }, // Add default location values
+          location: { lat: gym.location?.lat || 0, lng: gym.location?.lng || 0 },
           workingHours: gym.working_hours,
           rating: gym.rating,
           reviewCount: gym.review_count,
@@ -85,7 +89,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       if (classesError) {
         console.error('Error fetching classes:', classesError);
       } else if (classesData) {
-        const formattedClasses: Class[] = classesData.map(cls => ({
+        const formattedClasses: FitnessClass[] = classesData.map(cls => ({
           id: cls.id,
           gymId: cls.gym_id,
           title: cls.title,
@@ -118,16 +122,27 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         }));
         setSubscriptions(formattedSubscriptions);
       }
+
+      // Fetch bookings if user is logged in
+      if (currentUser) {
+        getUserBookings().then(bookings => {
+          setBookings(bookings);
+        });
+      }
     };
 
     fetchData();
-  }, []);
+  }, [currentUser]);
 
   const getGymById = (id: string): Gym | undefined => {
     return gyms.find((gym) => gym.id === id);
   };
 
-  const getGymClasses = async (gymId: string): Promise<Class[]> => {
+  const getClassById = (id: string): FitnessClass | undefined => {
+    return classes.find((cls) => cls.id === id);
+  };
+
+  const getGymClasses = async (gymId: string): Promise<FitnessClass[]> => {
     const now = new Date();
     const { data, error } = await supabase
       .from('classes')
@@ -186,8 +201,8 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   };
 
   const bookClass = async (classId: string, gymId: string): Promise<boolean> => {
-    if (!currentUser) {
-      toast.error("Необходимо войти в систему");
+    if (!user) {
+      toast("Необходимо войти в систему");
       return false;
     }
     
@@ -196,11 +211,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       const { data: existingBookings } = await supabase
         .from('bookings')
         .select('*')
-        .eq('user_id', currentUser.id)
+        .eq('user_id', user.id)
         .eq('class_id', classId);
       
       if (existingBookings && existingBookings.length > 0) {
-        toast.error("Вы уже записаны на это занятие");
+        toast("Вы уже записаны на это занятие");
         return false;
       }
       
@@ -212,7 +227,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         .single();
       
       if (classData && classData.booked_count >= classData.capacity) {
-        toast.error("Занятие уже заполнено");
+        toast("Занятие уже заполнено");
         return false;
       }
       
@@ -221,10 +236,10 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         .from('bookings')
         .insert([
           { 
-            user_id: currentUser.id, 
+            user_id: user.id, 
             class_id: classId,
             gym_id: gymId,
-            status: 'ACTIVE', 
+            status: 'BOOKED', 
             date_time: new Date().toISOString(),
             created_at: new Date().toISOString()
           }
@@ -232,7 +247,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       
       if (error) {
         console.error('Error booking class:', error);
-        toast.error("Ошибка при бронировании");
+        toast("Ошибка при бронировании");
         return false;
       }
       
@@ -248,17 +263,21 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         )
       );
       
-      toast.success("Вы успешно записались на занятие");
+      // Refresh bookings
+      const updatedBookings = await getUserBookings();
+      setBookings(updatedBookings);
+      
+      toast("Вы успешно записались на занятие");
       return true;
     } catch (error) {
       console.error('Error in bookClass:', error);
-      toast.error("Произошла ошибка");
+      toast("Произошла ошибка");
       return false;
     }
   };
 
   const getUserBookings = async (): Promise<Booking[]> => {
-    if (!currentUser) return [];
+    if (!user) return [];
     
     try {
       const { data, error } = await supabase
@@ -268,7 +287,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
           classes:class_id(*),
           gyms:gym_id(*)
         `)
-        .eq('user_id', currentUser.id)
+        .eq('user_id', user.id)
         .order('date_time', { ascending: false });
       
       if (error) {
@@ -276,7 +295,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         return [];
       }
       
-      return data.map(booking => ({
+      const formattedBookings: Booking[] = data.map(booking => ({
         id: booking.id,
         userId: booking.user_id,
         classId: booking.class_id,
@@ -284,6 +303,8 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         status: booking.status,
         dateTime: booking.date_time,
         createdAt: booking.created_at,
+        className: booking.classes.title,
+        gymName: booking.gyms.name,
         class: {
           id: booking.classes.id,
           gymId: booking.classes.gym_id,
@@ -303,6 +324,8 @@ export const AppProvider = ({ children }: AppProviderProps) => {
           mainImage: booking.gyms.main_image
         }
       }));
+      
+      return formattedBookings;
     } catch (error) {
       console.error('Error in getUserBookings:', error);
       return [];
@@ -310,7 +333,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   };
 
   const cancelBooking = async (bookingId: string): Promise<boolean> => {
-    if (!currentUser) return false;
+    if (!user) return false;
     
     try {
       // Get booking data to know which class to decrement
@@ -326,8 +349,8 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       }
       
       // Only allow cancellation if booking belongs to current user
-      if (bookingData.user_id !== currentUser.id) {
-        toast.error("У вас нет прав для отмены этой записи");
+      if (bookingData.user_id !== user.id) {
+        toast("У вас нет прав для отмены этой записи");
         return false;
       }
       
@@ -339,7 +362,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       
       if (error) {
         console.error('Error cancelling booking:', error);
-        toast.error("Ошибка при отмене записи");
+        toast("Ошибка при отмене записи");
         return false;
       }
       
@@ -355,16 +378,16 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         )
       );
       
-      toast.success("Запись успешно отменена");
+      toast("Запись успешно отменена");
       return true;
     } catch (error) {
       console.error('Error in cancelBooking:', error);
-      toast.error("Произошла ошибка");
+      toast("Произошла ошибка");
       return false;
     }
   };
 
-  const addGym = async (gymData: Omit<Gym, "id" | "rating" | "reviewCount">): Promise<Gym> => {
+  const addGym = async (gym: Omit<Gym, "id" | "rating" | "reviewCount">): Promise<Gym> => {
     if (!currentUser || currentUser.role !== "PARTNER") {
       throw new Error("Недостаточно прав для добавления зала");
     }
@@ -374,15 +397,15 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         .from('gyms')
         .insert([
           {
-            name: gymData.name,
-            description: gymData.description,
-            address: gymData.address,
-            city: gymData.city,
-            main_image: gymData.mainImage,
-            images: gymData.images,
-            features: gymData.features,
-            category: gymData.category,
-            working_hours: gymData.workingHours,
+            name: gym.name,
+            description: gym.description,
+            address: gym.address,
+            city: gym.city,
+            main_image: gym.mainImage,
+            images: gym.images,
+            features: gym.features,
+            category: gym.category,
+            working_hours: gym.workingHours,
             rating: 0,
             review_count: 0,
             owner_id: currentUser.id
@@ -490,7 +513,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     }
   };
 
-  const addClass = async (classData: Omit<Class, "id" | "bookedCount">): Promise<Class> => {
+  const addClass = async (classData: Omit<FitnessClass, "id" | "bookedCount">): Promise<FitnessClass> => {
     const gym = gyms.find(g => g.id === classData.gymId);
     
     if (!gym) {
@@ -529,7 +552,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         throw error;
       }
       
-      const newClass: Class = {
+      const newClass: FitnessClass = {
         id: data.id,
         gymId: data.gym_id,
         title: data.title,
@@ -554,7 +577,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     }
   };
 
-  const updateClass = async (id: string, updates: Partial<Class>): Promise<Class> => {
+  const updateClass = async (id: string, updates: Partial<FitnessClass>): Promise<FitnessClass> => {
     const cls = classes.find(c => c.id === id);
     
     if (!cls) {
@@ -599,7 +622,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         throw error;
       }
       
-      const updatedClass: Class = {
+      const updatedClass: FitnessClass = {
         ...cls,
         ...updates
       };
@@ -693,7 +716,10 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       classes,
       subscriptions,
       filteredGyms,
+      user,
+      bookings,
       getGymById,
+      getClassById,
       getGymClasses,
       filterGyms,
       bookClass,

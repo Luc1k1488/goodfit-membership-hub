@@ -1,14 +1,15 @@
 
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Header } from "@/components/Header";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 const RegisterPage = () => {
   const [name, setName] = useState("");
@@ -20,12 +21,15 @@ const RegisterPage = () => {
   const navigate = useNavigate();
   const { register, verifyOTP } = useAuth();
 
-  const handleSendOtp = async (e: React.FormEvent<HTMLFormElement>) => {
+  // Handle registration form submission
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
+      // Send OTP to user's phone
       await register(name, phone);
+      
       setShowOtpInput(true);
     } catch (error) {
       console.error("Registration error:", error);
@@ -34,15 +38,17 @@ const RegisterPage = () => {
     }
   };
   
+  // Handle OTP verification
   const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
+      // Verify OTP
       const user = await verifyOTP(phone, otp);
       
-      // Update user's name if needed
-      if (!user.name && name) {
+      // Update user profile with name in Supabase
+      if (user) {
         const { error } = await supabase
           .from('users')
           .update({ name })
@@ -54,7 +60,15 @@ const RegisterPage = () => {
       }
       
       toast.success("Регистрация успешна!");
-      navigate("/profile");
+      
+      // Redirect based on role
+      if (user.role === "ADMIN") {
+        navigate("/admin-dashboard");
+      } else if (user.role === "PARTNER") {
+        navigate("/partner-dashboard");
+      } else {
+        navigate("/profile");
+      }
     } catch (error) {
       console.error("OTP verification error:", error);
     } finally {
@@ -78,14 +92,14 @@ const RegisterPage = () => {
       <div className="flex-1 flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold">Создайте аккаунт</h1>
+            <h1 className="text-2xl font-bold">Создание аккаунта</h1>
             <p className="mt-2 text-muted-foreground">
-              {showOtpInput ? "Введите код из SMS" : "Введите ваши данные для регистрации"}
+              {showOtpInput ? "Введите код из SMS" : "Заполните данные для регистрации"}
             </p>
           </div>
           
           {!showOtpInput ? (
-            <form className="space-y-6" onSubmit={handleSendOtp}>
+            <form className="space-y-6" onSubmit={handleRegister}>
               <div className="space-y-2">
                 <Label htmlFor="name">Ваше имя</Label>
                 <Input
@@ -114,15 +128,20 @@ const RegisterPage = () => {
               
               <Button
                 type="submit"
-                className="w-full bg-goodfit-primary hover:bg-goodfit-dark rounded-xl py-6"
-                disabled={isSubmitting}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-6"
+                disabled={isSubmitting || !name || !phone}
               >
-                {isSubmitting ? "Отправка..." : "Получить код"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Отправка...
+                  </>
+                ) : "Зарегистрироваться"}
               </Button>
               
               <div className="text-center text-sm">
                 Уже есть аккаунт?{" "}
-                <Link to="/login" className="text-goodfit-primary hover:underline">
+                <Link to="/login" className="text-blue-500 hover:underline">
                   Войти
                 </Link>
               </div>
@@ -138,8 +157,8 @@ const RegisterPage = () => {
                     onChange={setOtp}
                     render={({ slots }) => (
                       <InputOTPGroup>
-                        {slots.map((slot, index) => (
-                          <InputOTPSlot key={index} {...slot} />
+                        {slots.map((slot) => (
+                          <InputOTPSlot key={slot.key} {...slot} />
                         ))}
                       </InputOTPGroup>
                     )}
@@ -152,10 +171,15 @@ const RegisterPage = () => {
               
               <Button
                 type="submit"
-                className="w-full bg-goodfit-primary hover:bg-goodfit-dark rounded-xl py-6"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-6"
                 disabled={isSubmitting || otp.length < 6}
               >
-                {isSubmitting ? "Проверка..." : "Зарегистрироваться"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Проверка...
+                  </>
+                ) : "Подтвердить"}
               </Button>
               
               <div className="text-center text-sm">
@@ -163,7 +187,7 @@ const RegisterPage = () => {
                   variant="link"
                   type="button"
                   onClick={() => setShowOtpInput(false)}
-                  className="text-goodfit-primary p-0"
+                  className="text-blue-500 p-0"
                 >
                   Изменить данные
                 </Button>
@@ -184,7 +208,7 @@ const RegisterPage = () => {
                       setIsSubmitting(false);
                     }
                   }}
-                  className="text-goodfit-primary p-0"
+                  className="text-blue-500 p-0"
                   disabled={isSubmitting}
                 >
                   Отправить код повторно

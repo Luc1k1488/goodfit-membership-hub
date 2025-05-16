@@ -18,8 +18,8 @@ export function Header({ children }: HeaderProps) {
       <div className="flex items-center justify-between h-14 px-4">
         {children || (
           <Link to="/" className="flex items-center">
-            <span className="text-xl font-bold text-goodfit-primary">
-              Good<span className="text-goodfit-secondary">Fit</span>
+            <span className="text-xl font-bold text-blue-500">
+              Good<span className="text-blue-700">Fit</span>
             </span>
           </Link>
         )}

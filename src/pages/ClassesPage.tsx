@@ -4,7 +4,12 @@ import { ClassCard } from "@/components/ClassCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/context/AppContext";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Loader2 } from "lucide-react";
+import { Header } from "@/components/Header";
+import { format, parseISO, addDays, isSameDay } from "date-fns";
+import { ru } from "date-fns/locale";
+import { FitnessClass } from "@/types";
+import { useNavigate } from "react-router-dom";
 import { 
   Sheet, 
   SheetContent, 
@@ -15,119 +20,173 @@ import {
 const ClassesPage = () => {
   const { classes, getGymById } = useApp();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredClasses, setFilteredClasses] = useState(classes);
+  const [filteredClasses, setFilteredClasses] = useState<FitnessClass[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   
-  // Filter classes based on search term
+  // Generate dates for the next 7 days for the date selector
+  const dateOptions = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
+  
+  // Filter classes based on search term and selected date
   useEffect(() => {
-    const filtered = classes.filter((cls) => {
-      const gym = getGymById(cls.gymId);
-      const searchLower = searchTerm.toLowerCase();
+    setIsLoading(true);
+    
+    setTimeout(() => {
+      const filtered = classes.filter((cls) => {
+        const classDate = parseISO(cls.startTime);
+        const matchesDate = isSameDay(classDate, selectedDate);
+        
+        if (!matchesDate) return false;
+        
+        if (!searchTerm) return true;
+        
+        const gym = getGymById(cls.gymId);
+        const searchLower = searchTerm.toLowerCase();
+        
+        return (
+          cls.title.toLowerCase().includes(searchLower) ||
+          cls.instructor.toLowerCase().includes(searchLower) ||
+          cls.category.toLowerCase().includes(searchLower) ||
+          (gym && gym.name.toLowerCase().includes(searchLower))
+        );
+      });
       
-      return (
-        cls.title.toLowerCase().includes(searchLower) ||
-        cls.instructor.toLowerCase().includes(searchLower) ||
-        cls.category.toLowerCase().includes(searchLower) ||
-        (gym && gym.name.toLowerCase().includes(searchLower))
+      // Sort by start time
+      const sortedClasses = [...filtered].sort((a, b) => 
+        parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime()
       );
-    });
+      
+      setFilteredClasses(sortedClasses);
+      setIsLoading(false);
+    }, 500); // Simulate loading for better UX
     
-    setFilteredClasses(filtered);
-  }, [classes, searchTerm, getGymById]);
+  }, [classes, searchTerm, selectedDate, getGymById]);
   
-  // Group classes by date
-  const groupedClasses = filteredClasses.reduce((acc, cls) => {
-    const date = new Date(cls.startTime).toDateString();
-    
-    if (!acc[date]) {
-      acc[date] = [];
+  // Format day name
+  const formatDayName = (date: Date): string => {
+    if (isSameDay(date, new Date())) {
+      return "Сегодня";
     }
-    
-    acc[date].push(cls);
-    return acc;
-  }, {} as Record<string, typeof classes>);
+    if (isSameDay(date, addDays(new Date(), 1))) {
+      return "Завтра";
+    }
+    return format(date, "EEE", { locale: ru });
+  };
   
-  // Sort dates chronologically
-  const sortedDates = Object.keys(groupedClasses).sort(
-    (a, b) => new Date(a).getTime() - new Date(b).getTime()
-  );
+  const handleClassSelect = (classId: string, gymId: string) => {
+    navigate(`/booking/${gymId}/${classId}`);
+  };
   
   return (
-    <div className="px-4 py-4">
-      <h1 className="mb-4 text-xl font-bold">Расписание занятий</h1>
+    <div className="pb-16">
+      <Header>
+        <h1 className="text-xl font-bold">Расписание занятий</h1>
+      </Header>
       
-      {/* Search and filter */}
-      <div className="flex gap-2 mb-6">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            type="text"
-            placeholder="Поиск занятий..."
-            className="pl-10 w-full rounded-full"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="px-4 py-4">
+        {/* Date selector */}
+        <div className="flex overflow-x-auto pb-2 mb-4 no-scrollbar">
+          {dateOptions.map((date, index) => (
+            <div 
+              key={index}
+              className={`flex flex-col items-center mr-3 min-w-[60px] ${
+                isSameDay(date, selectedDate) 
+                  ? 'text-blue-500' 
+                  : 'text-foreground'
+              }`}
+              onClick={() => setSelectedDate(date)}
+            >
+              <div 
+                className={`w-12 h-12 rounded-full flex flex-col items-center justify-center mb-1 ${
+                  isSameDay(date, selectedDate)
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-background border'
+                }`}
+              >
+                <span className="text-sm">{formatDayName(date)}</span>
+                <span className="text-lg font-semibold">{format(date, "d")}</span>
+              </div>
+              <span className="text-xs">{format(date, "MMM", { locale: ru })}</span>
+            </div>
+          ))}
         </div>
         
-        <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="flex items-center rounded-full">
-              <Filter className="w-4 h-4 mr-2" />
-              Фильтры
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl">
-            <h3 className="text-lg font-medium mb-4">Фильтры</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Категория</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="justify-start">Йога</Button>
-                  <Button variant="outline" className="justify-start">Пилатес</Button>
-                  <Button variant="outline" className="justify-start">Кроссфит</Button>
-                  <Button variant="outline" className="justify-start">Кардио</Button>
+        {/* Search and filter */}
+        <div className="flex gap-2 mb-6">
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Поиск занятий..."
+              className="pl-10 w-full rounded-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="flex items-center rounded-full">
+                <Filter className="w-4 h-4 mr-2" />
+                Фильтры
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl">
+              <h3 className="text-lg font-semibold mb-4">Фильтры</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Категория</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" className="justify-start">Йога</Button>
+                    <Button variant="outline" className="justify-start">Пилатес</Button>
+                    <Button variant="outline" className="justify-start">Кроссфит</Button>
+                    <Button variant="outline" className="justify-start">Кардио</Button>
+                  </div>
+                </div>
+                
+                <div className="pt-4">
+                  <SheetClose asChild>
+                    <Button className="w-full bg-blue-500 text-white hover:bg-blue-600 rounded-xl py-6">
+                      Применить фильтры
+                    </Button>
+                  </SheetClose>
                 </div>
               </div>
-              
-              <div className="pt-4">
-                <SheetClose asChild>
-                  <Button className="w-full bg-goodfit-primary hover:bg-goodfit-dark rounded-xl py-6">
-                    Применить фильтры
-                  </Button>
-                </SheetClose>
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-      
-      {/* Class listings by date */}
-      {sortedDates.length > 0 ? (
-        sortedDates.map((date) => (
-          <div key={date} className="mb-6">
-            <h2 className="mb-3 text-lg font-semibold">{date}</h2>
-            <div className="grid gap-4">
-              {groupedClasses[date].map((cls) => {
-                const gym = getGymById(cls.gymId);
-                return (
+            </SheetContent>
+          </Sheet>
+        </div>
+        
+        {/* Class listings */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="mt-2">Загрузка занятий...</p>
+          </div>
+        ) : filteredClasses.length > 0 ? (
+          <div className="grid gap-4">
+            {filteredClasses.map((cls) => {
+              const gym = getGymById(cls.gymId);
+              return (
+                <div key={cls.id} onClick={() => handleClassSelect(cls.id, cls.gymId)}>
                   <ClassCard
-                    key={cls.id}
                     fitnessClass={cls}
                     gym={gym ? { id: gym.id, name: gym.name } : undefined}
                   />
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        ))
-      ) : (
-        <div className="p-8 text-center bg-gray-50 rounded-xl">
-          <h3 className="mb-2 text-lg font-medium">Занятия не найдены</h3>
-          <p className="text-gray-600">
-            Попробуйте изменить параметры поиска.
-          </p>
-        </div>
-      )}
+        ) : (
+          <div className="p-8 text-center bg-background rounded-xl border">
+            <h3 className="mb-2 text-lg font-medium">Занятия не найдены</h3>
+            <p className="text-muted-foreground">
+              На этот день нет доступных занятий или они не соответствуют параметрам поиска.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
