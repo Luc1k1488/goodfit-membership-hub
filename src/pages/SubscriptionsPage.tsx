@@ -10,10 +10,10 @@ const SubscriptionsPage = () => {
   return (
     <div className="container px-4 py-8 mx-auto sm:px-6">
       <div className="max-w-3xl mx-auto mb-12 text-center">
-        <h1 className="text-3xl font-bold">Membership Plans</h1>
+        <h1 className="text-3xl font-bold">Абонементы</h1>
         <p className="mt-4 text-gray-600">
-          Choose the perfect membership plan for your fitness journey. All plans give you
-          unlimited access to all GoodFit partner locations.
+          Выберите подходящий абонемент для вашего фитнес-путешествия. Все тарифы дают вам
+          неограниченный доступ ко всем локациям партнеров GoodFit.
         </p>
       </div>
       
@@ -24,54 +24,54 @@ const SubscriptionsPage = () => {
       </div>
       
       <div className="max-w-4xl mx-auto">
-        <h2 className="mb-6 text-2xl font-bold">Membership Benefits</h2>
+        <h2 className="mb-6 text-2xl font-bold">Преимущества абонементов</h2>
         
         <Tabs defaultValue="all_plans">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all_plans">All Plans</TabsTrigger>
-            <TabsTrigger value="monthly">Monthly</TabsTrigger>
-            <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
-            <TabsTrigger value="annual">Annual</TabsTrigger>
+            <TabsTrigger value="all_plans">Все тарифы</TabsTrigger>
+            <TabsTrigger value="monthly">Месячный</TabsTrigger>
+            <TabsTrigger value="quarterly">Квартальный</TabsTrigger>
+            <TabsTrigger value="annual">Годовой</TabsTrigger>
           </TabsList>
           
           <TabsContent value="all_plans" className="pt-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="p-6 rounded-lg bg-gray-50">
-                <h3 className="mb-4 text-xl font-semibold">Core Benefits</h3>
+                <h3 className="mb-4 text-xl font-semibold">Основные преимущества</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>Access to all partner gyms and studios</span>
+                    <span>Доступ ко всем партнерским залам и студиям</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>Unlimited class bookings</span>
+                    <span>Неограниченное количество бронирований занятий</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>No long-term commitments</span>
+                    <span>Без долгосрочных обязательств</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>Mobile app for booking and check-in</span>
+                    <span>Мобильное приложение для бронирования и регистрации</span>
                   </li>
                 </ul>
               </div>
               
               <div className="p-6 rounded-lg bg-gray-50">
-                <h3 className="mb-4 text-xl font-semibold">Limitations</h3>
+                <h3 className="mb-4 text-xl font-semibold">Ограничения</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-red-400 rounded-full"></div>
-                    <span>Maximum 1 visit per day per location</span>
+                    <span>Максимум 1 визит в день на одну локацию</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-red-400 rounded-full"></div>
-                    <span>Some premium classes may have additional fees</span>
+                    <span>Некоторые премиум-занятия могут иметь дополнительную плату</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-red-400 rounded-full"></div>
-                    <span>Class bookings open 24 hours in advance</span>
+                    <span>Бронирование занятий открывается за 24 часа</span>
                   </li>
                 </ul>
               </div>
@@ -81,37 +81,37 @@ const SubscriptionsPage = () => {
           <TabsContent value="monthly" className="pt-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="p-6 rounded-lg bg-gray-50">
-                <h3 className="mb-4 text-xl font-semibold">Monthly Plan Benefits</h3>
+                <h3 className="mb-4 text-xl font-semibold">Преимущества месячного тарифа</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>All core benefits</span>
+                    <span>Все основные преимущества</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>Perfect for trying out the service</span>
+                    <span>Идеален для ознакомления с сервисом</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>Cancel anytime</span>
+                    <span>Можно отменить в любое время</span>
                   </li>
                 </ul>
               </div>
               
               <div className="p-6 rounded-lg bg-gray-50">
-                <h3 className="mb-4 text-xl font-semibold">Ideal For</h3>
+                <h3 className="mb-4 text-xl font-semibold">Подходит для</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-primary rounded-full"></div>
-                    <span>First-time users trying out GoodFit</span>
+                    <span>Новичков, впервые пробующих GoodFit</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-primary rounded-full"></div>
-                    <span>Those with changing schedules</span>
+                    <span>Людей с меняющимся расписанием</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-primary rounded-full"></div>
-                    <span>People who prefer flexibility</span>
+                    <span>Тех, кто предпочитает гибкость</span>
                   </li>
                 </ul>
               </div>
@@ -121,37 +121,37 @@ const SubscriptionsPage = () => {
           <TabsContent value="quarterly" className="pt-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="p-6 rounded-lg bg-gray-50">
-                <h3 className="mb-4 text-xl font-semibold">Quarterly Plan Benefits</h3>
+                <h3 className="mb-4 text-xl font-semibold">Преимущества квартального тарифа</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>All monthly benefits</span>
+                    <span>Все преимущества месячного тарифа</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>16% savings compared to monthly plan</span>
+                    <span>Экономия 16% по сравнению с месячным планом</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>Priority booking window (book 48 hours in advance)</span>
+                    <span>Приоритетное окно бронирования (за 48 часов)</span>
                   </li>
                 </ul>
               </div>
               
               <div className="p-6 rounded-lg bg-gray-50">
-                <h3 className="mb-4 text-xl font-semibold">Ideal For</h3>
+                <h3 className="mb-4 text-xl font-semibold">Подходит для</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-primary rounded-full"></div>
-                    <span>Regular fitness enthusiasts</span>
+                    <span>Любителей регулярных тренировок</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-primary rounded-full"></div>
-                    <span>Those who want to save some money</span>
+                    <span>Тех, кто хочет сэкономить</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-primary rounded-full"></div>
-                    <span>People who value booking popular classes</span>
+                    <span>Людей, ценящих возможность бронировать популярные занятия</span>
                   </li>
                 </ul>
               </div>
@@ -161,45 +161,45 @@ const SubscriptionsPage = () => {
           <TabsContent value="annual" className="pt-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="p-6 rounded-lg bg-gray-50">
-                <h3 className="mb-4 text-xl font-semibold">Annual Plan Benefits</h3>
+                <h3 className="mb-4 text-xl font-semibold">Преимущества годового тарифа</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>All quarterly benefits</span>
+                    <span>Все преимущества квартального тарифа</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>28% savings compared to monthly plan</span>
+                    <span>Экономия 28% по сравнению с месячным планом</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>Free guest pass each month</span>
+                    <span>Бесплатный гостевой проход каждый месяц</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>Complimentary fitness consultation</span>
+                    <span>Бесплатная фитнес-консультация</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-secondary rounded-full"></div>
-                    <span>Priority booking (72 hours in advance)</span>
+                    <span>Приоритетное бронирование (за 72 часа)</span>
                   </li>
                 </ul>
               </div>
               
               <div className="p-6 rounded-lg bg-gray-50">
-                <h3 className="mb-4 text-xl font-semibold">Ideal For</h3>
+                <h3 className="mb-4 text-xl font-semibold">Подходит для</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-primary rounded-full"></div>
-                    <span>Committed fitness enthusiasts</span>
+                    <span>Преданных фитнес-энтузиастов</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-primary rounded-full"></div>
-                    <span>Those looking for maximum value</span>
+                    <span>Тех, кто ищет максимальную выгоду</span>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 mt-2 mr-2 bg-goodfit-primary rounded-full"></div>
-                    <span>People who want to bring friends occasionally</span>
+                    <span>Людей, которые хотят иногда приводить друзей</span>
                   </li>
                 </ul>
               </div>
@@ -209,41 +209,41 @@ const SubscriptionsPage = () => {
       </div>
       
       <div className="max-w-3xl mx-auto mt-16">
-        <h2 className="mb-6 text-2xl font-bold">Frequently Asked Questions</h2>
+        <h2 className="mb-6 text-2xl font-bold">Часто задаваемые вопросы</h2>
         
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="item-1">
-            <AccordionTrigger>How many times can I visit a gym per day?</AccordionTrigger>
+            <AccordionTrigger>Сколько раз в день я могу посещать зал?</AccordionTrigger>
             <AccordionContent>
-              You can visit each partner location once per day. However, you can visit multiple different locations in the same day.
+              Вы можете посещать каждую партнерскую локацию один раз в день. Однако вы можете посетить несколько разных локаций в один и тот же день.
             </AccordionContent>
           </AccordionItem>
           
           <AccordionItem value="item-2">
-            <AccordionTrigger>Can I cancel my subscription anytime?</AccordionTrigger>
+            <AccordionTrigger>Могу ли я отменить подписку в любое время?</AccordionTrigger>
             <AccordionContent>
-              Yes, you can cancel your subscription at any time. For monthly plans, there is no commitment. For quarterly and annual plans, you can still cancel but will not receive a refund for the unused portion.
+              Да, вы можете отменить подписку в любое время. Для месячных тарифов нет обязательств. Для квартальных и годовых тарифов вы также можете отменить подписку, но возврат средств за неиспользованную часть не предусмотрен.
             </AccordionContent>
           </AccordionItem>
           
           <AccordionItem value="item-3">
-            <AccordionTrigger>How do I book a class?</AccordionTrigger>
+            <AccordionTrigger>Как забронировать занятие?</AccordionTrigger>
             <AccordionContent>
-              You can book classes through our mobile app or website. Simply browse the schedule for your preferred gym, select a class, and tap "Book". You can book classes 24-72 hours in advance depending on your membership type.
+              Вы можете бронировать занятия через наше мобильное приложение или веб-сайт. Просто просмотрите расписание вашего предпочтительного зала, выберите занятие и нажмите "Забронировать". Вы можете бронировать занятия за 24-72 часа в зависимости от типа вашего абонемента.
             </AccordionContent>
           </AccordionItem>
           
           <AccordionItem value="item-4">
-            <AccordionTrigger>What happens if I miss a booked class?</AccordionTrigger>
+            <AccordionTrigger>Что происходит, если я пропущу забронированное занятие?</AccordionTrigger>
             <AccordionContent>
-              If you can't attend a class, please cancel your booking at least 2 hours before the class starts. Repeated no-shows may result in booking restrictions.
+              Если вы не можете посетить занятие, пожалуйста, отмените бронирование не менее чем за 2 часа до начала занятия. Повторные неявки могут привести к ограничениям на бронирование.
             </AccordionContent>
           </AccordionItem>
           
           <AccordionItem value="item-5">
-            <AccordionTrigger>Do you offer corporate memberships?</AccordionTrigger>
+            <AccordionTrigger>Предлагаете ли вы корпоративные абонементы?</AccordionTrigger>
             <AccordionContent>
-              Yes, we offer special corporate rates for companies. Please contact our corporate sales team at corporate@goodfit.com for more information.
+              Да, мы предлагаем специальные корпоративные тарифы для компаний. Пожалуйста, свяжитесь с нашей командой корпоративных продаж по адресу corporate@goodfit.com для получения дополнительной информации.
             </AccordionContent>
           </AccordionItem>
         </Accordion>

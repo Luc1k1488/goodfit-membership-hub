@@ -124,8 +124,8 @@ const LoginPage = () => {
                     onChange={setOtp}
                     render={({ slots }) => (
                       <InputOTPGroup>
-                        {slots.map((slot) => (
-                          <InputOTPSlot key={slot.key} {...slot} />
+                        {slots.map((slot, index) => (
+                          <InputOTPSlot key={index} {...slot} />
                         ))}
                       </InputOTPGroup>
                     )}

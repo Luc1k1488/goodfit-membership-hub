@@ -29,6 +29,7 @@ export function Header({ children }: HeaderProps) {
           size="icon"
           onClick={toggleTheme}
           className="ml-auto"
+          aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить темную тему'}
         >
           {theme === 'dark' ? (
             <SunIcon className="h-5 w-5" />

@@ -76,6 +76,7 @@ export interface Booking {
   createdAt?: string;
   className?: string;
   gymName?: string;
+  userName?: string;
   class?: FitnessClass;
   gym?: {
     id: string;

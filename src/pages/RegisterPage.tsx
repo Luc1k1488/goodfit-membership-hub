@@ -9,7 +9,6 @@ import { useAuth } from "@/context/AuthContext";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Header } from "@/components/Header";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
 
 const RegisterPage = () => {
   const [name, setName] = useState("");
@@ -21,15 +20,12 @@ const RegisterPage = () => {
   const navigate = useNavigate();
   const { register, verifyOTP } = useAuth();
 
-  // Handle registration form submission
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      // Send OTP to user's phone
       await register(name, phone);
-      
       setShowOtpInput(true);
     } catch (error) {
       console.error("Registration error:", error);
@@ -38,28 +34,13 @@ const RegisterPage = () => {
     }
   };
   
-  // Handle OTP verification
   const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      // Verify OTP
       const user = await verifyOTP(phone, otp);
-      
-      // Update user profile with name in Supabase
-      if (user) {
-        const { error } = await supabase
-          .from('users')
-          .update({ name })
-          .eq('id', user.id);
-          
-        if (error) {
-          console.error("Error updating user name:", error);
-        }
-      }
-      
-      toast.success("Регистрация успешна!");
+      toast.success("Регистрация успешно завершена!");
       
       // Redirect based on role
       if (user.role === "ADMIN") {
@@ -69,6 +50,7 @@ const RegisterPage = () => {
       } else {
         navigate("/profile");
       }
+      
     } catch (error) {
       console.error("OTP verification error:", error);
     } finally {
@@ -85,27 +67,27 @@ const RegisterPage = () => {
               <ChevronLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-lg font-medium">Регистрация</h1>
+          <h1 className="text-lg font-medium">Регистрация в GoodFit</h1>
         </div>
       </Header>
       
       <div className="flex-1 flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold">Создание аккаунта</h1>
+            <h1 className="text-2xl font-bold">Создайте аккаунт</h1>
             <p className="mt-2 text-muted-foreground">
-              {showOtpInput ? "Введите код из SMS" : "Заполните данные для регистрации"}
+              {showOtpInput ? "Подтвердите ваш номер телефона" : "Введите данные для регистрации"}
             </p>
           </div>
           
           {!showOtpInput ? (
             <form className="space-y-6" onSubmit={handleRegister}>
               <div className="space-y-2">
-                <Label htmlFor="name">Ваше имя</Label>
+                <Label htmlFor="name">Имя</Label>
                 <Input
                   id="name"
                   type="text"
-                  placeholder="Иван Иванов"
+                  placeholder="Введите ваше имя"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -129,7 +111,7 @@ const RegisterPage = () => {
               <Button
                 type="submit"
                 className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-6"
-                disabled={isSubmitting || !name || !phone}
+                disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
@@ -157,8 +139,8 @@ const RegisterPage = () => {
                     onChange={setOtp}
                     render={({ slots }) => (
                       <InputOTPGroup>
-                        {slots.map((slot) => (
-                          <InputOTPSlot key={slot.key} {...slot} />
+                        {slots.map((slot, index) => (
+                          <InputOTPSlot key={index} {...slot} />
                         ))}
                       </InputOTPGroup>
                     )}

@@ -4,7 +4,7 @@ import { ClassCard } from "@/components/ClassCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/context/AppContext";
-import { Search, Filter, Loader2 } from "lucide-react";
+import { Search, Filter, Loader2, CalendarX } from "lucide-react";
 import { Header } from "@/components/Header";
 import { format, parseISO, addDays, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -86,29 +86,25 @@ const ClassesPage = () => {
       </Header>
       
       <div className="px-4 py-4">
-        {/* Date selector */}
-        <div className="flex overflow-x-auto pb-2 mb-4 no-scrollbar">
+        {/* Date selector - Improved styling */}
+        <div className="flex overflow-x-auto pb-3 mb-5 no-scrollbar">
           {dateOptions.map((date, index) => (
             <div 
               key={index}
-              className={`flex flex-col items-center mr-3 min-w-[60px] ${
-                isSameDay(date, selectedDate) 
-                  ? 'text-blue-500' 
-                  : 'text-foreground'
-              }`}
+              className="flex flex-col items-center mr-3 min-w-[68px]"
               onClick={() => setSelectedDate(date)}
             >
               <div 
-                className={`w-12 h-12 rounded-full flex flex-col items-center justify-center mb-1 ${
+                className={`w-14 h-14 rounded-full flex flex-col items-center justify-center mb-1 transition-all ${
                   isSameDay(date, selectedDate)
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-background border'
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'bg-background border hover:border-blue-200'
                 }`}
               >
-                <span className="text-sm">{formatDayName(date)}</span>
-                <span className="text-lg font-semibold">{format(date, "d")}</span>
+                <span className="text-xs font-medium">{formatDayName(date)}</span>
+                <span className="text-lg font-bold">{format(date, "d")}</span>
               </div>
-              <span className="text-xs">{format(date, "MMM", { locale: ru })}</span>
+              <span className="text-xs text-muted-foreground">{format(date, "MMM", { locale: ru })}</span>
             </div>
           ))}
         </div>
@@ -179,10 +175,11 @@ const ClassesPage = () => {
             })}
           </div>
         ) : (
-          <div className="p-8 text-center bg-background rounded-xl border">
+          <div className="p-8 text-center bg-background rounded-xl border flex flex-col items-center">
+            <CalendarX className="h-12 w-12 text-blue-400 mb-3" />
             <h3 className="mb-2 text-lg font-medium">Занятия не найдены</h3>
             <p className="text-muted-foreground">
-              На этот день нет доступных занятий или они не соответствуют параметрам поиска.
+              Пока нет занятий на выбранную дату. Попробуйте выбрать другой день или изменить параметры поиска.
             </p>
           </div>
         )}
