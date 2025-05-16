@@ -6,9 +6,10 @@ import { toast } from "sonner";
 
 type AuthContextType = {
   currentUser: User | null;
-  login: (email: string, password: string) => Promise<User>;
+  login: (phone: string) => Promise<void>;
+  verifyOTP: (phone: string, otp: string) => Promise<User>;
   logout: () => Promise<void>;
-  register: (name: string, email: string, phone: string, password: string) => Promise<User>;
+  register: (name: string, phone: string) => Promise<void>;
   isLoading: boolean;
   userRole: "USER" | "PARTNER" | "ADMIN" | null;
 };
@@ -139,13 +140,43 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<User> => {
+  const login = async (phone: string): Promise<void> => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      // Format phone number to ensure E.164 format
+      const formattedPhone = formatPhoneNumber(phone);
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Код подтверждения отправлен на ваш телефон", {
+        description: "Пожалуйста, введите полученный код"
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось войти';
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyOTP = async (phone: string, otp: string): Promise<User> => {
+    setIsLoading(true);
+    
+    try {
+      const formattedPhone = formatPhoneNumber(phone);
+      
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: formattedPhone,
+        token: otp,
+        type: 'sms'
       });
 
       if (error) {
@@ -153,23 +184,55 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       if (!data.user) {
-        throw new Error('No user returned from login');
+        throw new Error('Пользователь не найден');
       }
 
-      // Get user data from database
+      // Check if user exists in our users table
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', data.user.id)
         .single();
 
+      // If user doesn't exist in our table, create a new record
       if (userError) {
-        throw userError;
+        // Create new user with default role USER
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: data.user.id,
+              name: '',  // Will be updated later
+              phone: formattedPhone,
+              role: 'USER',
+              created_at: new Date().toISOString()
+            }
+          ])
+          .select()
+          .single();
+
+        if (createError) {
+          throw createError;
+        }
+
+        const user: User = {
+          id: newUser.id,
+          name: newUser.name || '',
+          email: newUser.email || '',
+          phone: newUser.phone || '',
+          role: newUser.role as "USER" | "PARTNER" | "ADMIN",
+          createdAt: newUser.created_at,
+          profileImage: newUser.profile_image || '/placeholder.svg'
+        };
+
+        setCurrentUser(user);
+        setUserRole(user.role);
+        return user;
       }
 
       const user: User = {
         id: userData.id,
-        name: userData.name,
+        name: userData.name || '',
         email: userData.email || '',
         phone: userData.phone || '',
         role: userData.role as "USER" | "PARTNER" | "ADMIN",
@@ -180,10 +243,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setCurrentUser(user);
       setUserRole(user.role);
       
-      toast.success(`Welcome back, ${user.name}!`);
+      toast.success(`Добро пожаловать${user.name ? ', ' + user.name : ''}!`);
       return user;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      const errorMessage = error instanceof Error ? error.message : 'Неверный код';
       toast.error(errorMessage);
       throw error;
     } finally {
@@ -203,9 +266,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       setCurrentUser(null);
       setUserRole(null);
-      toast.info('You have been logged out');
+      toast.info('Вы вышли из системы');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Logout failed';
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка при выходе';
       toast.error(errorMessage);
       throw error;
     } finally {
@@ -213,69 +276,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const register = async (name: string, email: string, phone: string, password: string): Promise<User> => {
+  const register = async (name: string, phone: string): Promise<void> => {
     setIsLoading(true);
     
     try {
-      // Sign up with Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
-            phone
-          }
-        }
+      const formattedPhone = formatPhoneNumber(phone);
+      
+      // For registration, we first send OTP
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
       });
 
       if (error) {
         throw error;
       }
-
-      if (!data.user) {
-        throw new Error('No user returned from registration');
-      }
       
-      // Insert new user into users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .insert([
-          { 
-            id: data.user.id,
-            name, 
-            email,
-            phone,
-            role: 'USER',
-            created_at: new Date().toISOString()
-          }
-        ])
-        .select()
-        .single();
+      // Store name temporarily (will be saved after OTP verification)
+      localStorage.setItem('pendingRegistrationName', name);
       
-      if (userError) {
-        // If user creation in database fails, try to delete the auth user
-        await supabase.auth.admin.deleteUser(data.user.id);
-        throw userError;
-      }
-      
-      const user: User = {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email || '',
-        phone: userData.phone || '',
-        role: userData.role as "USER" | "PARTNER" | "ADMIN",
-        createdAt: userData.created_at,
-        profileImage: userData.profile_image || '/placeholder.svg'
-      };
-
-      setCurrentUser(user);
-      setUserRole(user.role);
-      
-      toast.success('Registration successful! Welcome to GoodFit');
-      return user;
+      toast.success("Код подтверждения отправлен на ваш телефон", {
+        description: "Пожалуйста, введите полученный код для завершения регистрации"
+      });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка регистрации';
       toast.error(errorMessage);
       throw error;
     } finally {
@@ -283,9 +306,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Helper function to format phone to E.164
+  const formatPhoneNumber = (phone: string): string => {
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+    
+    // Ensure it starts with country code (Russia)
+    if (digits.startsWith('7') || digits.startsWith('8')) {
+      return `+7${digits.substring(1)}`;
+    } else if (!digits.startsWith('+')) {
+      return `+7${digits}`;
+    }
+    
+    return phone;
+  };
+
   const value = {
     currentUser,
     login,
+    verifyOTP,
     logout,
     register,
     isLoading,

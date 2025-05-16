@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -5,46 +6,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/lib/supabaseClient";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Header } from "@/components/Header";
+import { ChevronLeft } from "lucide-react";
 
 const LoginPage = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOtpInput, setShowOtpInput] = useState(false);
   
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, verifyOTP } = useAuth();
 
-  const handleQuickLogin = async (role: "USER" | "PARTNER" | "ADMIN") => {
-    let testEmail = "";
-    
-    switch (role) {
-      case "USER":
-        testEmail = "john@example.com";
-        break;
-      case "PARTNER":
-        testEmail = "alex@fitgym.com";
-        break;
-      case "ADMIN":
-        testEmail = "admin@goodfit.com";
-        break;
-    }
-    
-    setEmail(testEmail);
-    setPassword("password123");
-  };
-  
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSendOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      const user = await login(email, password);
-      
-      toast({
-        title: "Login successful!",
-        description: `Welcome back, ${user.name}!`,
-      });
+      await login(phone);
+      setShowOtpInput(true);
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      const user = await verifyOTP(phone, otp);
       
       // Redirect based on role
       if (user.role === "ADMIN") {
@@ -56,104 +50,130 @@ const LoginPage = () => {
       }
       
     } catch (error) {
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid email or password",
-        variant: "destructive",
-      });
+      console.error("OTP verification error:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
   
   return (
-    <div className="container flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Log in to GoodFit</h1>
-          <p className="mt-2 text-gray-600">
-            Access your account and manage your fitness journey
-          </p>
+    <div className="flex flex-col min-h-screen bg-background">
+      <Header>
+        <div className="flex items-center">
+          <Link to="/">
+            <Button variant="ghost" size="icon" className="mr-2">
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <h1 className="text-lg font-medium">Вход в GoodFit</h1>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <div className="text-right mt-1">
-                <Link to="/forgot-password" className="text-sm text-goodfit-primary hover:underline">
-                  Forgot password?
+      </Header>
+      
+      <div className="flex-1 flex flex-col items-center px-4 py-8">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Добро пожаловать</h1>
+            <p className="mt-2 text-muted-foreground">
+              {showOtpInput ? "Введите код из SMS" : "Введите номер телефона для входа"}
+            </p>
+          </div>
+          
+          {!showOtpInput ? (
+            <form className="space-y-6" onSubmit={handleSendOtp}>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Номер телефона</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+7 (___) ___-__-__"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  className="rounded-xl text-base py-6"
+                />
+              </div>
+              
+              <Button
+                type="submit"
+                className="w-full bg-goodfit-primary hover:bg-goodfit-dark rounded-xl py-6"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Отправка..." : "Получить код"}
+              </Button>
+              
+              <div className="text-center text-sm">
+                Нет аккаунта?{" "}
+                <Link to="/register" className="text-goodfit-primary hover:underline">
+                  Зарегистрироваться
                 </Link>
               </div>
-            </div>
-          </div>
-          
-          <Button
-            type="submit"
-            className="w-full bg-goodfit-primary hover:bg-goodfit-dark"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Logging in..." : "Log in"}
-          </Button>
-          
-          <div className="text-center text-sm">
-            Don't have an account?{" "}
-            <Link to="/register" className="text-goodfit-primary hover:underline">
-              Register now
-            </Link>
-          </div>
-
-          {/* Quick login options for development */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <p className="text-center text-sm text-gray-500 mb-2">Quick login for testing</p>
-            <div className="grid grid-cols-3 gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleQuickLogin("USER")}
+            </form>
+          ) : (
+            <form className="space-y-6" onSubmit={handleVerifyOtp}>
+              <div className="space-y-4">
+                <Label htmlFor="otp">Введите код из SMS</Label>
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={setOtp}
+                    render={({ slots }) => (
+                      <InputOTPGroup>
+                        {slots.map((slot, index) => (
+                          <InputOTPSlot key={index} {...slot} />
+                        ))}
+                      </InputOTPGroup>
+                    )}
+                  />
+                </div>
+                <p className="text-center text-sm text-muted-foreground mt-2">
+                  Код отправлен на номер {phone}
+                </p>
+              </div>
+              
+              <Button
+                type="submit"
+                className="w-full bg-goodfit-primary hover:bg-goodfit-dark rounded-xl py-6"
+                disabled={isSubmitting || otp.length < 6}
               >
-                Client
+                {isSubmitting ? "Проверка..." : "Войти"}
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleQuickLogin("PARTNER")}
-              >
-                Partner
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleQuickLogin("ADMIN")}
-              >
-                Admin
-              </Button>
-            </div>
-          </div>
-        </form>
+              
+              <div className="text-center text-sm">
+                <Button
+                  variant="link"
+                  type="button"
+                  onClick={() => setShowOtpInput(false)}
+                  className="text-goodfit-primary p-0"
+                >
+                  Изменить номер телефона
+                </Button>
+              </div>
+              
+              <div className="text-center text-sm mt-4">
+                <Button
+                  variant="link"
+                  type="button"
+                  onClick={async () => {
+                    setIsSubmitting(true);
+                    try {
+                      await login(phone);
+                      toast.success("Новый код отправлен");
+                    } catch (error) {
+                      console.error("Error resending code:", error);
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  className="text-goodfit-primary p-0"
+                  disabled={isSubmitting}
+                >
+                  Отправить код повторно
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
