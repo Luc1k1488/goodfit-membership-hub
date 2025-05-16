@@ -1,8 +1,8 @@
 
 {
-  "name": "GoodFit - Unified Fitness Membership",
+  "name": "GoodFit - Единый фитнес-абонемент",
   "short_name": "GoodFit",
-  "description": "Access hundreds of gyms with a single subscription",
+  "description": "Доступ к сотням залов по единой подписке",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

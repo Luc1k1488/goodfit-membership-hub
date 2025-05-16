@@ -12,7 +12,7 @@ interface GymCardProps {
 export function GymCard({ gym }: GymCardProps) {
   return (
     <Link to={`/gyms/${gym.id}`}>
-      <Card className="overflow-hidden transition-all hover:shadow-lg">
+      <Card className="overflow-hidden transition-all hover:shadow-lg rounded-xl">
         <div className="relative aspect-video overflow-hidden">
           <img
             src={gym.mainImage}
@@ -30,7 +30,7 @@ export function GymCard({ gym }: GymCardProps) {
           <h3 className="text-lg font-bold">{gym.name}</h3>
           <p className="text-sm text-gray-500">{gym.address}</p>
           <div className="flex flex-wrap gap-1 mt-2">
-            {gym.category.slice(0, 3).map((cat, index) => (
+            {gym.category?.slice(0, 3).map((cat, index) => (
               <Badge key={index} variant="outline" className="text-xs">
                 {cat}
               </Badge>
@@ -42,10 +42,10 @@ export function GymCard({ gym }: GymCardProps) {
         </CardContent>
         <CardFooter className="px-4 py-3 border-t flex justify-between">
           <div className="text-sm text-gray-500">
-            {gym.workingHours.open} - {gym.workingHours.close}
+            {gym.workingHours?.open} - {gym.workingHours?.close}
           </div>
           <div className="text-sm text-gray-500">
-            {gym.reviewCount} reviews
+            {gym.reviewCount} отзывов
           </div>
         </CardFooter>
       </Card>

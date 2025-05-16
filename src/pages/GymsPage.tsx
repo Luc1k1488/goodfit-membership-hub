@@ -4,6 +4,7 @@ import { GymCard } from "@/components/GymCard";
 import { CityFilter } from "@/components/CityFilter";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { SearchFilter } from "@/components/SearchFilter";
+import { FilterLayout } from "@/components/FilterLayout";
 import { useApp } from "@/context/AppContext";
 import { Gym } from "@/types";
 
@@ -24,7 +25,7 @@ const GymsPage = () => {
   const categories = useMemo(() => {
     const categorySet = new Set<string>();
     gyms.forEach(gym => {
-      gym.category.forEach(cat => categorySet.add(cat));
+      gym.category?.forEach(cat => categorySet.add(cat));
     });
     return Array.from(categorySet);
   }, [gyms]);
@@ -43,7 +44,7 @@ const GymsPage = () => {
     // Apply category filter
     if (selectedCategories.length > 0) {
       filtered = filtered.filter(gym => 
-        gym.category.some(cat => selectedCategories.includes(cat))
+        gym.category?.some(cat => selectedCategories.includes(cat))
       );
     }
     
@@ -77,54 +78,60 @@ const GymsPage = () => {
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
-  
-  return (
-    <div className="container px-4 py-8 mx-auto sm:px-6">
-      <h1 className="mb-8 text-3xl font-bold">Gyms & Studios</h1>
+
+  const renderSidebar = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="mb-3 text-lg font-medium">Поиск</h3>
+        <SearchFilter onSearch={handleSearch} />
+      </div>
       
-      <div className="grid gap-6 mb-8 md:grid-cols-[300px,1fr]">
-        <div className="space-y-6">
-          <div>
-            <h3 className="mb-3 text-lg font-medium">Search</h3>
-            <SearchFilter onSearch={handleSearch} />
-          </div>
-          
-          <div>
-            <h3 className="mb-3 text-lg font-medium">Categories</h3>
-            <CategoryFilter 
-              categories={categories} 
-              selectedCategories={selectedCategories}
-              onChange={handleCategoryChange}
-            />
-          </div>
-        </div>
-        
-        <div>
-          <div className="mb-4">
-            <CityFilter 
-              cities={cities} 
-              activeCity={selectedCity} 
-              onCityChange={handleCityChange}
-            />
-          </div>
-          
-          {filteredList.length > 0 ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredList.map((gym) => (
-                <GymCard key={gym.id} gym={gym} />
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center bg-gray-50 rounded-lg">
-              <h3 className="mb-2 text-lg font-medium">No gyms found</h3>
-              <p className="text-gray-600">
-                Try changing your filters or search query.
-              </p>
-            </div>
-          )}
-        </div>
+      <div>
+        <h3 className="mb-3 text-lg font-medium">Город</h3>
+        <CityFilter 
+          cities={cities} 
+          activeCity={selectedCity} 
+          onCityChange={handleCityChange}
+        />
+      </div>
+      
+      <div>
+        <h3 className="mb-3 text-lg font-medium">Категории</h3>
+        <CategoryFilter 
+          categories={categories} 
+          selectedCategories={selectedCategories}
+          onChange={handleCategoryChange}
+        />
       </div>
     </div>
+  );
+
+  const renderContent = () => (
+    <>
+      <h1 className="mb-4 text-xl font-bold">Залы и студии</h1>
+      
+      {filteredList.length > 0 ? (
+        <div className="grid gap-4">
+          {filteredList.map((gym) => (
+            <GymCard key={gym.id} gym={gym} />
+          ))}
+        </div>
+      ) : (
+        <div className="p-8 text-center bg-gray-50 rounded-xl">
+          <h3 className="mb-2 text-lg font-medium">Залы не найдены</h3>
+          <p className="text-gray-600">
+            Попробуйте изменить параметры поиска.
+          </p>
+        </div>
+      )}
+    </>
+  );
+  
+  return (
+    <FilterLayout
+      sidebar={renderSidebar()}
+      content={renderContent()}
+    />
   );
 };
 

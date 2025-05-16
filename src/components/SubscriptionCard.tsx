@@ -15,12 +15,12 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
   const dailyPrice = Math.round(subscription.price / subscription.durationDays);
   
   return (
-    <Card className={`relative overflow-hidden transition-transform hover:-translate-y-1 ${
+    <Card className={`relative overflow-hidden transition-transform hover:-translate-y-1 rounded-xl ${
       subscription.isPopular ? 'border-goodfit-secondary shadow-lg' : ''
     }`}>
       {subscription.isPopular && (
-        <div className="absolute top-0 right-0 bg-goodfit-secondary text-white px-4 py-1 text-xs font-medium uppercase tracking-wider">
-          Most Popular
+        <div className="absolute top-0 right-0 bg-goodfit-secondary text-white px-4 py-1 text-xs font-medium uppercase tracking-wider rounded-bl-lg">
+          Популярный
         </div>
       )}
       
@@ -34,7 +34,7 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
             ₽{(subscription.price / 100).toLocaleString()}
           </p>
           <p className="text-sm text-muted-foreground">
-            ₽{(dailyPrice / 100).toLocaleString()} per day
+            ₽{(dailyPrice / 100).toLocaleString()} в день
           </p>
         </div>
         
@@ -50,11 +50,11 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
       
       <CardFooter>
         <Button 
-          className="w-full bg-goodfit-primary hover:bg-goodfit-dark"
+          className="w-full bg-goodfit-primary hover:bg-goodfit-dark rounded-xl py-6"
           asChild
         >
           <Link to={user ? "/checkout" : "/login"}>
-            {user ? "Subscribe Now" : "Log in to Subscribe"}
+            {user ? "Оформить подписку" : "Войти для оформления"}
           </Link>
         </Button>
       </CardFooter>

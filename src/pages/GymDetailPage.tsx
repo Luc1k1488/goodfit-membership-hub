@@ -1,204 +1,196 @@
 
 import { useParams, Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ClassCard } from "@/components/ClassCard";
 import { useApp } from "@/context/AppContext";
-import { Star, Clock, MapPin } from "lucide-react";
+import { Star, Clock, MapPin, ChevronLeft } from "lucide-react";
 
 const GymDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const { getGymById, getGymClasses } = useApp();
   const [activeTab, setActiveTab] = useState<string>("classes");
+  const [classes, setClasses] = useState<any[]>([]);
   
   const gym = getGymById(id || "");
-  const classes = id ? getGymClasses(id) : [];
+  
+  useEffect(() => {
+    const fetchClasses = async () => {
+      if (id) {
+        const gymClasses = await getGymClasses(id);
+        setClasses(gymClasses);
+      }
+    };
+    
+    fetchClasses();
+  }, [id, getGymClasses]);
   
   if (!gym) {
     return (
-      <div className="container px-4 py-16 mx-auto text-center sm:px-6">
-        <h1 className="text-2xl font-bold">Gym not found</h1>
-        <p className="mt-4 text-gray-600">The gym you're looking for doesn't exist or has been removed.</p>
-        <Button className="mt-6" asChild>
-          <Link to="/gyms">Back to Gyms</Link>
+      <div className="px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold">Зал не найден</h1>
+        <p className="mt-4 text-gray-600">Данный зал не существует или был удален.</p>
+        <Button className="mt-6 rounded-xl" asChild>
+          <Link to="/gyms">Вернуться к залам</Link>
         </Button>
       </div>
     );
   }
   
   return (
-    <div className="container px-4 py-8 mx-auto sm:px-6">
-      <div className="mb-6">
-        <Link to="/gyms" className="text-goodfit-primary hover:underline">
-          &larr; Back to Gyms
+    <div className="pb-4">
+      <div className="sticky top-0 bg-white z-10 px-4 py-3 flex items-center border-b">
+        <Link to="/gyms" className="mr-2">
+          <ChevronLeft className="w-6 h-6" />
         </Link>
+        <h1 className="text-xl font-bold">{gym.name}</h1>
       </div>
       
-      {/* Gym Header */}
-      <div className="mb-8">
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-3xl font-bold">{gym.name}</h1>
-            <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500">
-              <div className="flex items-center">
-                <MapPin className="w-4 h-4 mr-1" />
-                {gym.address}
-              </div>
-              <div className="flex items-center">
-                <Clock className="w-4 h-4 mr-1" />
-                {gym.workingHours.open} - {gym.workingHours.close}
-              </div>
-              <div className="flex items-center">
-                <Star className="w-4 h-4 mr-1 text-yellow-400" />
-                {gym.rating} ({gym.reviewCount} reviews)
-              </div>
-            </div>
+      {/* Gym Images */}
+      <div className="relative mb-4">
+        <img 
+          src={gym.mainImage} 
+          alt={gym.name} 
+          className="object-cover w-full h-56"
+        />
+        <div className="absolute top-2 right-2">
+          <Badge className="bg-white text-black">
+            <Star className="w-3 h-3 mr-1 text-yellow-400 fill-current" /> 
+            {gym.rating}
+          </Badge>
+        </div>
+      </div>
+      
+      <div className="px-4">
+        {/* Address and Working Hours */}
+        <div className="mb-4">
+          <div className="flex items-center text-sm text-gray-500 mb-1">
+            <MapPin className="w-4 h-4 mr-1" />
+            {gym.address}
           </div>
-          <Button className="bg-goodfit-primary hover:bg-goodfit-dark">
-            Book a Class
-          </Button>
+          <div className="flex items-center text-sm text-gray-500">
+            <Clock className="w-4 h-4 mr-1" />
+            {gym.workingHours?.open} - {gym.workingHours?.close}
+          </div>
         </div>
         
-        <div className="flex flex-wrap gap-2 mb-4">
-          {gym.category.map((category, index) => (
+        {/* Categories */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {gym.category?.map((category, index) => (
             <Badge key={index} variant="outline" className="capitalize">
               {category}
             </Badge>
           ))}
         </div>
-      </div>
-      
-      {/* Gym Images */}
-      <div className="grid gap-4 mb-8 md:grid-cols-2">
-        <img 
-          src={gym.mainImage} 
-          alt={gym.name} 
-          className="object-cover w-full h-64 rounded-lg"
-        />
-        <div className="grid grid-cols-2 gap-4">
-          {gym.images.slice(0, 2).map((image, index) => (
-            <img 
-              key={index} 
-              src={image} 
-              alt={`${gym.name} ${index + 1}`}
-              className="object-cover w-full h-full rounded-lg"
-            />
-          ))}
-        </div>
-      </div>
-      
-      {/* Gym Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-        <TabsList>
-          <TabsTrigger value="classes">Classes</TabsTrigger>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews</TabsTrigger>
-        </TabsList>
         
-        <TabsContent value="classes" className="pt-6">
-          <h2 className="mb-4 text-xl font-semibold">Upcoming Classes</h2>
-          {classes.length > 0 ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {classes.map((fitnessClass) => (
-                <ClassCard 
-                  key={fitnessClass.id} 
-                  fitnessClass={fitnessClass} 
-                  showBookButton={true}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center bg-gray-50 rounded-lg">
-              <p>No upcoming classes scheduled. Check back soon!</p>
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="details" className="pt-6">
-          <div className="grid gap-8 md:grid-cols-2">
+        {/* Gym Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
+          <TabsList className="w-full">
+            <TabsTrigger value="classes" className="flex-1">Занятия</TabsTrigger>
+            <TabsTrigger value="details" className="flex-1">Инфо</TabsTrigger>
+            <TabsTrigger value="reviews" className="flex-1">Отзывы</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="classes" className="pt-4">
+            <h2 className="mb-4 text-lg font-semibold">Предстоящие занятия</h2>
+            {classes.length > 0 ? (
+              <div className="grid gap-4">
+                {classes.map((fitnessClass) => (
+                  <ClassCard 
+                    key={fitnessClass.id} 
+                    fitnessClass={fitnessClass} 
+                    showBookButton={true}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 text-center bg-gray-50 rounded-xl">
+                <p>Нет предстоящих занятий. Проверьте позже!</p>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="details" className="pt-4">
             <div>
-              <h2 className="mb-4 text-xl font-semibold">About {gym.name}</h2>
+              <h2 className="mb-4 text-lg font-semibold">О {gym.name}</h2>
               <p className="text-gray-700">{gym.description}</p>
-              <h3 className="mt-6 mb-3 text-lg font-medium">Features</h3>
+              
+              <h3 className="mt-6 mb-3 text-lg font-medium">Особенности</h3>
               <ul className="grid grid-cols-2 gap-2">
-                {gym.features.map((feature, index) => (
+                {gym.features?.map((feature, index) => (
                   <li key={index} className="flex items-center">
                     <div className="w-2 h-2 mr-2 bg-goodfit-secondary rounded-full"></div>
                     {feature}
                   </li>
                 ))}
               </ul>
-            </div>
-            
-            <div>
-              <h2 className="mb-4 text-xl font-semibold">Location</h2>
-              <div className="bg-gray-200 rounded-lg h-64 flex items-center justify-center mb-4">
-                <p className="text-gray-500">Map placeholder</p>
+              
+              <h3 className="mt-6 mb-3 text-lg font-medium">Местоположение</h3>
+              <div className="bg-gray-200 rounded-lg h-48 flex items-center justify-center mb-4">
+                <p className="text-gray-500">Карта</p>
               </div>
               <p className="text-gray-700">{gym.address}</p>
             </div>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="reviews" className="pt-6">
-          <h2 className="mb-4 text-xl font-semibold">Member Reviews</h2>
-          <div className="flex items-center mb-6">
-            <div className="flex items-center mr-4">
-              <Star className="w-6 h-6 text-yellow-400 mr-1 fill-current" />
-              <span className="text-2xl font-bold">{gym.rating}</span>
-            </div>
-            <span className="text-gray-600">Based on {gym.reviewCount} reviews</span>
-          </div>
+          </TabsContent>
           
-          <div className="space-y-6">
-            {/* Sample reviews - would come from API in a real app */}
-            <div className="p-6 bg-gray-50 rounded-lg">
-              <div className="flex items-center mb-4">
-                <div className="flex items-center mr-3 text-yellow-400">
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                </div>
-                <p className="font-medium">Maria S.</p>
-                <span className="mx-2 text-gray-300">•</span>
-                <span className="text-gray-500">2 months ago</span>
+          <TabsContent value="reviews" className="pt-4">
+            <div className="flex items-center mb-6">
+              <div className="flex items-center mr-4">
+                <Star className="w-6 h-6 text-yellow-400 mr-1 fill-current" />
+                <span className="text-2xl font-bold">{gym.rating}</span>
               </div>
-              <p className="text-gray-700">
-                Great facilities and friendly staff! The equipment is always clean and well-maintained.
-              </p>
+              <span className="text-gray-600">На основе {gym.reviewCount} отзывов</span>
             </div>
             
-            <div className="p-6 bg-gray-50 rounded-lg">
-              <div className="flex items-center mb-4">
-                <div className="flex items-center mr-3 text-yellow-400">
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4" />
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <div className="flex items-center mr-3 text-yellow-400">
+                    <Star className="w-4 h-4 fill-current" />
+                    <Star className="w-4 h-4 fill-current" />
+                    <Star className="w-4 h-4 fill-current" />
+                    <Star className="w-4 h-4 fill-current" />
+                    <Star className="w-4 h-4 fill-current" />
+                  </div>
+                  <p className="font-medium">Мария С.</p>
+                  <span className="mx-2 text-gray-300">•</span>
+                  <span className="text-gray-500">2 месяца назад</span>
                 </div>
-                <p className="font-medium">Alex T.</p>
-                <span className="mx-2 text-gray-300">•</span>
-                <span className="text-gray-500">3 weeks ago</span>
+                <p className="text-gray-700">
+                  Отличные тренажеры и дружелюбный персонал! Оборудование всегда чистое и в хорошем состоянии.
+                </p>
               </div>
-              <p className="text-gray-700">
-                The classes here are amazing! The instructors are knowledgeable and motivating.
-                Only giving 4 stars because the changing rooms can get crowded during peak hours.
-              </p>
+              
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <div className="flex items-center mr-3 text-yellow-400">
+                    <Star className="w-4 h-4 fill-current" />
+                    <Star className="w-4 h-4 fill-current" />
+                    <Star className="w-4 h-4 fill-current" />
+                    <Star className="w-4 h-4 fill-current" />
+                    <Star className="w-4 h-4" />
+                  </div>
+                  <p className="font-medium">Алексей Т.</p>
+                  <span className="mx-2 text-gray-300">•</span>
+                  <span className="text-gray-500">3 недели назад</span>
+                </div>
+                <p className="text-gray-700">
+                  Занятия здесь просто отличные! Инструкторы знающие и мотивируют.
+                  Только 4 звезды, потому что раздевалки бывают переполнены в часы пик.
+                </p>
+              </div>
             </div>
-          </div>
-          
-          <div className="mt-8 text-center">
-            <Button className="bg-goodfit-primary hover:bg-goodfit-dark">
-              Write a Review
-            </Button>
-          </div>
-        </TabsContent>
-      </Tabs>
+            
+            <div className="mt-6">
+              <Button className="w-full bg-goodfit-primary hover:bg-goodfit-dark rounded-xl py-6">
+                Написать отзыв
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
