@@ -75,10 +75,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   // Initialize auth state on mount and set up auth listener
- useEffect(() => {
-  // First initialization - fetch user and set initialized flag
-  fetchCurrentUser();
-}, []); 
+useEffect(() => {
+  fetchCurrentUser(); // первый запуск
+
+  const sessionCheckInterval = setInterval(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session && currentUser) {
+        console.log("Session expired, logging out");
+        setCurrentUser(null);
+        setUserRole(null);
+        setAuthInitialized(true);
+        setIsLoading(false);
+      }
+    });
+  }, 60000); // проверка каждую минуту
+
+  return () => {
+    if (authListener?.subscription) {
+      authListener.subscription.unsubscribe();
+    }
+    clearInterval(sessionCheckInterval);
+  };
+}, [currentUser]);
+
 
     // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
