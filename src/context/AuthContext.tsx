@@ -173,7 +173,7 @@ useEffect(() => {
       }
      clearInterval(sessionCheckInterval);
   };
-}, [currentUser]); // Add currentUser as dependency to detect session changes
+}, [currentUser]);
 
   const login = async (contact: string): Promise<void> => {
     setIsLoading(true);
