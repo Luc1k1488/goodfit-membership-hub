@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,25 +17,11 @@ import { toast } from "sonner";
 
 const ProfilePage = () => {
   const { bookings, getClassById, getGymById } = useApp();
-  const { currentUser, isLoading, logout } = useAuth();
+  const { currentUser, isLoading, authInitialized, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("bookings");
-  const navigate = useNavigate();
   
-  // Since the route is now protected by ProtectedRoute,
-  // we don't need additional useEffect for redirection
-  
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast.error("Ошибка при выходе из системы");
-    }
-  };
-  
-  // Show loading indicator while auth state is being determined
-  if (isLoading) {
+  // Упрощенная логика загрузки
+  if (!authInitialized || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
@@ -43,17 +30,28 @@ const ProfilePage = () => {
     );
   }
   
-  // If still don't have user after loading is complete, show error
+  // Если после инициализации нет пользователя, показываем ошибку
+  // Это не должно происходить из-за ProtectedRoute, но оставим как fallback
   if (!currentUser) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-lg mb-4">Ошибка загрузки профиля</p>
-        <Button onClick={() => navigate("/login")}>Войти</Button>
+        <Button asChild>
+          <Link to="/login">Войти</Link>
+        </Button>
       </div>
     );
   }
   
-  // Now we can safely render the profile content
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Ошибка при выходе из системы");
+    }
+  };
+  
   // Filter bookings by status
   const activeBookings = bookings.filter(booking => booking.status === 'BOOKED');
   const completedBookings = bookings.filter(booking => booking.status === 'COMPLETED');
@@ -105,19 +103,19 @@ const ProfilePage = () => {
               <Button 
                 variant="outline" 
                 className="flex-1"
-                onClick={() => {
-                  if (currentUser.role === 'ADMIN') {
-                    navigate('/admin-dashboard');
-                  } else if (currentUser.role === 'PARTNER') {
-                    navigate('/partner-dashboard');
-                  }
-                }}
+                asChild
               >
-                {currentUser.role === 'ADMIN' 
-                  ? 'Админ панель' 
+                <Link to={currentUser.role === 'ADMIN' 
+                  ? '/admin-dashboard' 
                   : currentUser.role === 'PARTNER' 
-                    ? 'Панель партнёра'
-                    : 'Настройки'}
+                    ? '/partner-dashboard'
+                    : '/profile'}>
+                  {currentUser.role === 'ADMIN' 
+                    ? 'Админ панель' 
+                    : currentUser.role === 'PARTNER' 
+                      ? 'Панель партнёра'
+                      : 'Настройки'}
+                </Link>
               </Button>
               <Button 
                 variant="outline" 

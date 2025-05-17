@@ -24,41 +24,38 @@ import { useAuth } from "./context/AuthContext";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30000,
+    },
+  },
+});
 
-// Protected route component
+// Protected route component - переработанная версия с улучшенной защитой
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole?: "USER" | "PARTNER" | "ADMIN" }) => {
-  const { currentUser, isLoading } = useAuth();
-  const [showLoader, setShowLoader] = useState(false);
+  const { currentUser, isLoading, authInitialized } = useAuth();
   
-  useEffect(() => {
-    // Only show loader after a brief delay to avoid flashing
-    const timer = setTimeout(() => {
-      if (isLoading) {
-        setShowLoader(true);
-      }
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, [isLoading]);
-
-  // Always show loader while loading - this ensures routes are protected during authentication check
-  if (isLoading) {
+  // Always show loader while authentication is initializing or loading
+  if (!authInitialized || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Загрузка...</p>
+        <p className="text-lg">Проверка авторизации...</p>
       </div>
     );
   }
 
   // Only check auth after loading is complete
   if (!currentUser) {
+    console.log("Protected route - no user found, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
   // Check role requirements
   if (requiredRole && currentUser.role !== requiredRole) {
+    console.log("Protected route - wrong role, redirecting");
     if (currentUser.role === "ADMIN") {
       return <Navigate to="/admin-dashboard" replace />;
     } else if (currentUser.role === "PARTNER") {

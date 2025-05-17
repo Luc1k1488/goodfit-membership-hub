@@ -9,7 +9,8 @@ import { Header } from "@/components/Header";
 import { format, parseISO, addDays, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { FitnessClass } from "@/types";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { 
   Sheet, 
   SheetContent, 
@@ -19,6 +20,7 @@ import {
 
 const ClassesPage = () => {
   const { classes, getGymById } = useApp();
+  const { isLoading: authLoading, authInitialized } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredClasses, setFilteredClasses] = useState<FitnessClass[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -31,38 +33,50 @@ const ClassesPage = () => {
   
   // Filter classes based on search term and selected date
   useEffect(() => {
+    // Не начинаем фильтрацию, пока аутентификация не инициализирована
+    if (authLoading || !authInitialized) {
+      return;
+    }
+    
     setIsLoading(true);
     
-    setTimeout(() => {
-      const filtered = classes.filter((cls) => {
-        const classDate = parseISO(cls.startTime);
-        const matchesDate = isSameDay(classDate, selectedDate);
+    const timer = setTimeout(() => {
+      try {
+        const filtered = classes.filter((cls) => {
+          const classDate = parseISO(cls.startTime);
+          const matchesDate = isSameDay(classDate, selectedDate);
+          
+          if (!matchesDate) return false;
+          
+          if (!searchTerm) return true;
+          
+          const gym = getGymById(cls.gymId);
+          const searchLower = searchTerm.toLowerCase();
+          
+          return (
+            cls.title.toLowerCase().includes(searchLower) ||
+            cls.instructor.toLowerCase().includes(searchLower) ||
+            cls.category.toLowerCase().includes(searchLower) ||
+            (gym && gym.name.toLowerCase().includes(searchLower))
+          );
+        });
         
-        if (!matchesDate) return false;
-        
-        if (!searchTerm) return true;
-        
-        const gym = getGymById(cls.gymId);
-        const searchLower = searchTerm.toLowerCase();
-        
-        return (
-          cls.title.toLowerCase().includes(searchLower) ||
-          cls.instructor.toLowerCase().includes(searchLower) ||
-          cls.category.toLowerCase().includes(searchLower) ||
-          (gym && gym.name.toLowerCase().includes(searchLower))
+        // Sort by start time
+        const sortedClasses = [...filtered].sort((a, b) => 
+          parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime()
         );
-      });
-      
-      // Sort by start time
-      const sortedClasses = [...filtered].sort((a, b) => 
-        parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime()
-      );
-      
-      setFilteredClasses(sortedClasses);
-      setIsLoading(false);
-    }, 500); // Simulate loading for better UX
+        
+        setFilteredClasses(sortedClasses);
+      } catch (error) {
+        console.error("Error filtering classes:", error);
+        setFilteredClasses([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 500);
     
-  }, [classes, searchTerm, selectedDate, getGymById]);
+    return () => clearTimeout(timer);
+  }, [classes, searchTerm, selectedDate, getGymById, authLoading, authInitialized]);
   
   // Format day name
   const formatDayName = (date: Date): string => {
@@ -78,6 +92,16 @@ const ClassesPage = () => {
   const handleClassSelect = (classId: string, gymId: string) => {
     navigate(`/booking/${gymId}/${classId}`);
   };
+  
+  // Отображаем загрузку, если проверка авторизации еще не завершена
+  if (authLoading || !authInitialized) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-lg">Проверка авторизации...</p>
+      </div>
+    );
+  }
   
   return (
     <div className="pb-16">

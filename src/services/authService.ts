@@ -5,11 +5,13 @@ import { toast } from "sonner";
 
 // Helper function to check if input is an email or phone number
 export const isEmail = (input: string): boolean => {
-  return input.includes('@');
+  return input && typeof input === 'string' && input.includes('@');
 };
 
 // Функция для форматирования телефонного номера в формат E.164
 export const formatPhoneNumber = (phone: string): string => {
+  if (!phone) return '';
+  
   // Удаляем все нецифровые символы
   const digits = phone.replace(/\D/g, '');
   
@@ -25,6 +27,10 @@ export const formatPhoneNumber = (phone: string): string => {
 
 // Функция для отправки OTP на телефон или email
 export const sendOTP = async (contact: string): Promise<void> => {
+  if (!contact) {
+    throw new Error('Контактные данные не указаны');
+  }
+  
   if (isEmail(contact)) {
     console.log("Sending OTP to email:", contact);
     const { error } = await supabase.auth.signInWithOtp({
@@ -36,15 +42,20 @@ export const sendOTP = async (contact: string): Promise<void> => {
       throw error;
     }
   } else {
-    const formattedPhone = formatPhoneNumber(contact);
-    console.log("Sending OTP to phone:", formattedPhone);
-    
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: formattedPhone,
-    });
+    try {
+      const formattedPhone = formatPhoneNumber(contact);
+      console.log("Sending OTP to phone:", formattedPhone);
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
 
-    if (error) {
-      console.error("SignInWithOtp error:", error);
+      if (error) {
+        console.error("SignInWithOtp error:", error);
+        throw error;
+      }
+    } catch (error) {
+      console.error("Phone OTP error:", error);
       throw error;
     }
   }
@@ -54,6 +65,10 @@ export const sendOTP = async (contact: string): Promise<void> => {
 
 // Функция для проверки OTP кода
 export const verifyOTPCode = async (contact: string, otp: string): Promise<any> => {
+  if (!contact || !otp) {
+    throw new Error('Контактные данные или код не указаны');
+  }
+  
   try {
     let verifyOptions;
     
@@ -99,6 +114,10 @@ export const getUserOrCreate = async (userId: string, userData: {
   phone?: string;
   email?: string;
 }): Promise<User> => {
+  if (!userId) {
+    throw new Error('Идентификатор пользователя не указан');
+  }
+  
   console.log("Getting or creating user with ID:", userId, "userData:", userData);
   
   try {
@@ -148,14 +167,16 @@ export const getUserOrCreate = async (userId: string, userData: {
         }
       }
 
+      // Создаем объект пользователя из данных БД с правильными значениями по умолчанию
       const user: User = {
         id: existingUser.id,
         name: existingUser.name || userData.name || '',
         email: existingUser.email || userData.email || '',
         phone: existingUser.phone || userData.phone || '',
-        role: existingUser.role as "USER" | "PARTNER" | "ADMIN",
+        role: (existingUser.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
         createdAt: existingUser.created_at,
-        profileImage: existingUser.profile_image || '/placeholder.svg'
+        profileImage: existingUser.profile_image || '/placeholder.svg',
+        subscriptionId: existingUser.subscription_id || null
       };
 
       return user;
@@ -182,7 +203,36 @@ export const getUserOrCreate = async (userId: string, userData: {
 
     if (createError) {
       console.error("Error creating new user:", createError);
-      throw createError;
+      
+      // Попробуем еще раз получить пользователя, на случай если он был создан, но произошла ошибка
+      const { data: retryUser, error: retryError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (retryError || !retryUser) {
+        throw createError;
+      }
+      
+      console.log("Successfully retrieved user on retry:", retryUser);
+      
+      const user: User = {
+        id: retryUser.id,
+        name: retryUser.name || '',
+        email: retryUser.email || '',
+        phone: retryUser.phone || '',
+        role: (retryUser.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
+        createdAt: retryUser.created_at,
+        profileImage: retryUser.profile_image || '/placeholder.svg',
+        subscriptionId: retryUser.subscription_id || null
+      };
+
+      return user;
+    }
+
+    if (!newUser) {
+      throw new Error('Не удалось создать пользователя');
     }
 
     console.log("New user created successfully:", newUser);
@@ -192,9 +242,10 @@ export const getUserOrCreate = async (userId: string, userData: {
       name: newUser.name || '',
       email: newUser.email || '',
       phone: newUser.phone || '',
-      role: newUser.role as "USER" | "PARTNER" | "ADMIN",
+      role: (newUser.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
       createdAt: newUser.created_at,
-      profileImage: newUser.profile_image || '/placeholder.svg'
+      profileImage: newUser.profile_image || '/placeholder.svg',
+      subscriptionId: newUser.subscription_id || null
     };
 
     return user;
@@ -206,13 +257,18 @@ export const getUserOrCreate = async (userId: string, userData: {
 
 // Функция для выхода из системы
 export const logoutUser = async (): Promise<void> => {
-  const { error } = await supabase.auth.signOut();
-  
-  if (error) {
+  try {
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      throw error;
+    }
+    
+    toast.info('Вы вышли из системы');
+  } catch (error) {
+    console.error("Logout error:", error);
     throw error;
   }
-  
-  toast.info('Вы вышли из системы');
 };
 
 // Функция для получения текущей сессии пользователя
@@ -237,50 +293,61 @@ export const getCurrentUserSession = async (): Promise<{
     
     console.log("Active session found:", session.user.id);
     
-    // Получаем данные пользователя из базы данных
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
+    try {
+      // Получаем данные пользователя из базы данных
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
 
-    if (userError) {
-      console.error("User not found in database, attempting to create:", userError);
-      
-      // User authenticated but not in users table - create entry with available data
-      const authUser = session.user;
-      const newUserData = {
-        email: authUser.email || '',
-        phone: authUser.phone || ''
-      };
-      
-      try {
-        const user = await getUserOrCreate(authUser.id, newUserData);
-        return { session, user };
-      } catch (createError) {
-        console.error("Failed to create missing user:", createError);
-        return { session, user: null };
+      if (userError) {
+        console.log("User not found in database, creating user entry");
+        
+        // User authenticated but not in users table - create entry with available data
+        const authUser = session.user;
+        const newUserData: Record<string, string> = {};
+        
+        if (authUser.email) {
+          newUserData.email = authUser.email;
+        }
+        
+        if (authUser.phone) {
+          newUserData.phone = authUser.phone;
+        }
+        
+        try {
+          const user = await getUserOrCreate(authUser.id, newUserData);
+          return { session, user };
+        } catch (createError) {
+          console.error("Failed to create missing user:", createError);
+          return { session, user: null };
+        }
       }
-    }
 
-    if (userData) {
-      // Преобразуем данные пользователя из базы данных в формат приложения
-      const user: User = {
-        id: userData.id,
-        name: userData.name || '',
-        email: userData.email || '',
-        phone: userData.phone || '',
-        role: userData.role as "USER" | "PARTNER" | "ADMIN",
-        createdAt: userData.created_at,
-        profileImage: userData.profile_image || '/placeholder.svg'
-      };
+      if (userData) {
+        // Преобразуем данные пользователя из базы данных в формат приложения
+        const user: User = {
+          id: userData.id,
+          name: userData.name || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          role: (userData.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
+          createdAt: userData.created_at,
+          profileImage: userData.profile_image || '/placeholder.svg',
+          subscriptionId: userData.subscription_id || null
+        };
 
-      console.log("User data retrieved:", user);
-      return { session, user };
+        console.log("User data retrieved:", user);
+        return { session, user };
+      }
+      
+      console.log("User data not found in the database");
+      return { session, user: null };
+    } catch (error) {
+      console.error("Error getting user data:", error);
+      return { session, user: null };
     }
-    
-    console.log("User data not found in the database");
-    return { session, user: null };
   } catch (error) {
     console.error("Error in getCurrentUserSession:", error);
     return { session: null, user: null };

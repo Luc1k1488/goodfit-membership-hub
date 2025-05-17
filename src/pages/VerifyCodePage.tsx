@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -22,7 +23,7 @@ const VerifyCodePage = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyOTP, login, register } = useAuth();
+  const { verifyOTP, login, register, isLoading } = useAuth();
 
   useEffect(() => {
     // Clear any previous errors
@@ -75,11 +76,16 @@ const VerifyCodePage = () => {
           setName(pendingName);
         }
       }
-      setValidateInProgress(false);
+      
+      // Завершение валидации
+      setTimeout(() => {
+        setValidateInProgress(false);
+        console.log("Validation complete, contact:", stateData.contact);
+      }, 300);
     } else {
       console.log("No contact information provided, redirecting to login");
       toast.error("Контактные данные не указаны");
-      navigate("/login");
+      navigate("/login", { replace: true });
     }
   }, [location, navigate]);
 
@@ -94,7 +100,7 @@ const VerifyCodePage = () => {
     if (!contact) {
       setError("Контактные данные не указаны");
       toast.error("Ошибка: контактные данные не указаны");
-      setTimeout(() => navigate("/login"), 1500);
+      setTimeout(() => navigate("/login", { replace: true }), 1500);
       return;
     }
     
@@ -116,13 +122,13 @@ const VerifyCodePage = () => {
         : `Добро пожаловать${user.name ? `, ${user.name}` : ""}!`
       );
 
-      // Redirect based on user role
+      // Redirect based on user role with replace: true для предотвращения возврата назад
       if (user.role === "ADMIN") {
-        navigate("/admin-dashboard");
+        navigate("/admin-dashboard", { replace: true });
       } else if (user.role === "PARTNER") {
-        navigate("/partner-dashboard");
+        navigate("/partner-dashboard", { replace: true });
       } else {
-        navigate("/profile");
+        navigate("/profile", { replace: true });
       }
     } catch (error: any) {
       console.error("OTP verification error:", error);
@@ -159,7 +165,9 @@ const VerifyCodePage = () => {
     }
   };
 
-  if (validateInProgress) {
+  // Отображаем загрузку, если проверка данных еще не завершена
+  // или идет процесс авторизации
+  if (validateInProgress || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
@@ -175,7 +183,7 @@ const VerifyCodePage = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(isRegistration ? "/register" : "/login")}
+            onClick={() => navigate(isRegistration ? "/register" : "/login", { replace: true })}
             className="mr-2"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -256,7 +264,7 @@ const VerifyCodePage = () => {
               <Button
                 variant="link"
                 type="button"
-                onClick={() => navigate(isRegistration ? "/register" : "/login")}
+                onClick={() => navigate(isRegistration ? "/register" : "/login", { replace: true })}
                 className="text-blue-500 p-0"
               >
                 {isRegistration ? "Изменить данные" : "Изменить контактные данные"}

@@ -20,6 +20,7 @@ type AuthContextType = {
   logout: () => Promise<void>;
   register: (name: string, contact: string) => Promise<void>;
   isLoading: boolean;
+  authInitialized: boolean;
   userRole: "USER" | "PARTNER" | "ADMIN" | null;
 };
 
@@ -43,37 +44,41 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [userRole, setUserRole] = useState<"USER" | "PARTNER" | "ADMIN" | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
 
-  // Check user session and set current user on component mount
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      setIsLoading(true);
+  // Функция получения текущего пользователя
+  const fetchCurrentUser = async () => {
+    console.log("Fetching current user...");
+    setIsLoading(true);
+    
+    try {
+      const { session, user } = await getCurrentUserSession();
       
-      try {
-        const { session, user } = await getCurrentUserSession();
-        
-        if (user) {
-          setCurrentUser(user);
-          setUserRole(user.role);
-          console.log("User session established:", user);
-        } else {
-          setCurrentUser(null);
-          setUserRole(null);
-          console.log("No user session found");
-        }
-      } catch (error) {
-        console.error("Error in getCurrentUser:", error);
+      if (user) {
+        console.log("User found:", user);
+        setCurrentUser(user);
+        setUserRole(user.role);
+      } else {
+        console.log("No user session found");
         setCurrentUser(null);
         setUserRole(null);
-      } finally {
-        // Add a delay before setting isLoading to false to ensure state updates are consistent
-        setTimeout(() => {
-          setIsLoading(false);
-          setAuthInitialized(true);
-        }, 500);
       }
-    };
+    } catch (error) {
+      console.error("Error in fetchCurrentUser:", error);
+      setCurrentUser(null);
+      setUserRole(null);
+    } finally {
+      // Гарантируем, что isLoading будет установлен в false только после всех операций
+      setTimeout(() => {
+        setIsLoading(false);
+        setAuthInitialized(true);
+        console.log("Auth initialized, loading complete");
+      }, 800); // Увеличенная задержка для стабильности
+    }
+  };
 
-    getCurrentUser();
+  // Check user session and set current user on component mount
+  useEffect(() => {
+    // Инициализация при монтировании
+    fetchCurrentUser();
 
     // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -108,7 +113,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setTimeout(() => {
               setIsLoading(false);
               setAuthInitialized(true);
-            }, 500);
+              console.log("Auth state change processed, loading complete");
+            }, 800); // Увеличенная задержка для стабильности
           }
         }
       } else if (event === 'SIGNED_OUT') {
@@ -120,14 +126,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setTimeout(() => {
           setIsLoading(false);
           setAuthInitialized(true);
-        }, 300);
+        }, 800); // Увеличенная задержка для стабильности
       }
     });
+
+    // Регулярная проверка сессии
+    const sessionCheckInterval = setInterval(() => {
+      console.log("Periodic session check");
+      supabase.auth.getSession().then(({ data }) => {
+        if (!data.session && currentUser) {
+          console.log("Session expired, logging out");
+          setCurrentUser(null);
+          setUserRole(null);
+          setAuthInitialized(true);
+          setIsLoading(false);
+        }
+      });
+    }, 60000); // Проверка каждую минуту
 
     return () => {
       if (authListener && authListener.subscription) {
         authListener.subscription.unsubscribe();
       }
+      clearInterval(sessionCheckInterval);
     };
   }, []);
 
@@ -193,7 +214,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.error(errorMessage);
       throw error;
     } finally {
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
     }
   };
 
@@ -209,7 +232,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.error(errorMessage);
       throw error;
     } finally {
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
     }
   };
 
@@ -246,8 +271,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     logout,
     register,
     isLoading,
+    authInitialized,
     userRole
   };
+
+  // Обертка для отладки состояний аутентификации
+  useEffect(() => {
+    console.log("Auth state updated:", { 
+      isLoading, 
+      authInitialized, 
+      userExists: !!currentUser,
+      role: userRole 
+    });
+  }, [isLoading, authInitialized, currentUser, userRole]);
 
   return (
     <AuthContext.Provider value={value}>
