@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/auth";
 import { AppProvider } from "@/context/AppContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { BottomNavBar } from "@/components/BottomNavBar";
@@ -19,7 +19,7 @@ import AdminDashboardPage from "./pages/AdminDashboardPage";
 import PartnerDashboardPage from "./pages/PartnerDashboardPage";
 import BookingPage from "./pages/BookingPage";
 import NotFound from "./pages/NotFound";
-import { useAuth } from "./context/AuthContext";
+import { useAuth } from "./context/auth";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
