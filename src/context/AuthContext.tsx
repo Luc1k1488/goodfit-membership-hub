@@ -75,9 +75,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   // Initialize auth state on mount and set up auth listener
-  useEffect(() => {
-    // First initialization - fetch user and set initialized flag
-    fetchCurrentUser();
+ useEffect(() => {
+  // First initialization - fetch user and set initialized flag
+  fetchCurrentUser();
+}, []); 
 
     // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
