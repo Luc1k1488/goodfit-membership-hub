@@ -67,6 +67,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUserRole(null);
     } finally {
       // CRITICAL: Always set these flags to ensure they're updated
+      console.log(">>> Finally block reached");
       setIsLoading(false);
       setAuthInitialized(true);
       console.log("Auth initialized, loading complete");
