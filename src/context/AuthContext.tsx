@@ -102,7 +102,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setUserRole(null);
           } finally {
             setIsLoading(false);
-            setAuthInitialized(true);
           }
         }
       } else if (event === 'SIGNED_OUT') {
@@ -110,10 +109,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setCurrentUser(null);
         setUserRole(null);
         setIsLoading(false);
-        setAuthInitialized(true);
       } else {
         setIsLoading(false);
-        setAuthInitialized(true);
       }
     });
 
@@ -123,7 +120,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       clearInterval(sessionCheckInterval);
     };
-  }, [currentUser]);
+  }, []);
 
   const login = async (contact: string): Promise<void> => {
     setIsLoading(true);
