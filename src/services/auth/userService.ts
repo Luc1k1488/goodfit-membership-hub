@@ -16,35 +16,35 @@ export const getUserOrCreate = async (userId: string, userData: {
   console.log("Getting or creating user with ID:", userId, "userData:", userData);
   
   try {
-    // Проверяем, существует ли пользователь в базе данных
-    const { data: existingUser, error: userError } = await supabase
+    // Шаг 1: Проверяем, существует ли пользователь с таким ID в базе данных
+    const { data: existingUserById, error: userIdError } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
       .single();
 
-    // Если пользователь существует, обновляем данные, которые могли измениться
-    if (!userError && existingUser) {
-      console.log("User found in database:", existingUser);
+    // Если пользователь с таким ID существует, обновляем данные и возвращаем
+    if (!userIdError && existingUserById) {
+      console.log("User found in database by ID:", existingUserById);
       
       // Check if we need to update any user data
       const updateData: Record<string, any> = {};
       let needsUpdate = false;
       
       // If user has no phone but we have one, update it
-      if (!existingUser.phone && userData.phone) {
+      if (!existingUserById.phone && userData.phone) {
         updateData.phone = userData.phone;
         needsUpdate = true;
       }
       
       // If user has no email but we have one, update it
-      if (!existingUser.email && userData.email) {
+      if (!existingUserById.email && userData.email) {
         updateData.email = userData.email;
         needsUpdate = true;
       }
       
       // If we have a name and the existing one is empty, update it
-      if (userData.name && (!existingUser.name || existingUser.name.trim() === '')) {
+      if (userData.name && (!existingUserById.name || existingUserById.name.trim() === '')) {
         updateData.name = userData.name;
         needsUpdate = true;
       }
@@ -64,20 +64,85 @@ export const getUserOrCreate = async (userId: string, userData: {
 
       // Создаем объект пользователя из данных БД с правильными значениями по умолчанию
       const user: User = {
-        id: existingUser.id,
-        name: existingUser.name || userData.name || '',
-        email: existingUser.email || userData.email || '',
-        phone: existingUser.phone || userData.phone || '',
-        role: (existingUser.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
-        createdAt: existingUser.created_at,
-        profileImage: existingUser.profile_image || '/placeholder.svg',
-        subscriptionId: existingUser.subscription_id || null
+        id: existingUserById.id,
+        name: existingUserById.name || userData.name || '',
+        email: existingUserById.email || userData.email || '',
+        phone: existingUserById.phone || userData.phone || '',
+        role: (existingUserById.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
+        createdAt: existingUserById.created_at,
+        profileImage: existingUserById.profile_image || '/placeholder.svg',
+        subscriptionId: existingUserById.subscription_id || null
       };
 
       return user;
     }
 
-    // Если пользователь не существует, создаем новую запись
+    // Шаг 2: Если пользователь с таким ID не найден, но у нас есть email, ищем по email
+    if (userData.email) {
+      const { data: existingUserByEmail, error: userEmailError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', userData.email)
+        .single();
+
+      if (!userEmailError && existingUserByEmail) {
+        console.log("User found in database by email:", existingUserByEmail);
+        
+        // Важное решение: если пользователь найден по email, но с другим ID, 
+        // обновляем ID в базе данных на новый от auth
+        const { error: updateIdError } = await supabase
+          .from('users')
+          .update({ id: userId })
+          .eq('id', existingUserByEmail.id);
+          
+        if (updateIdError) {
+          console.error("Error updating user ID:", updateIdError);
+        } else {
+          console.log(`Updated user ID from ${existingUserByEmail.id} to ${userId}`);
+        }
+        
+        // Обновляем другие данные, если необходимо
+        const updateData: Record<string, any> = { id: userId };
+        let needsUpdate = false;
+        
+        if (!existingUserByEmail.phone && userData.phone) {
+          updateData.phone = userData.phone;
+          needsUpdate = true;
+        }
+        
+        if (userData.name && (!existingUserByEmail.name || existingUserByEmail.name.trim() === '')) {
+          updateData.name = userData.name;
+          needsUpdate = true;
+        }
+        
+        if (needsUpdate) {
+          console.log("Updating existing user data with:", updateData);
+          const { error: updateError } = await supabase
+            .from('users')
+            .update(updateData)
+            .eq('id', existingUserByEmail.id);
+            
+          if (updateError) {
+            console.error("Error updating user data:", updateError);
+          }
+        }
+
+        const user: User = {
+          id: userId, // Используем новый ID
+          name: existingUserByEmail.name || userData.name || '',
+          email: existingUserByEmail.email || userData.email || '',
+          phone: existingUserByEmail.phone || userData.phone || '',
+          role: (existingUserByEmail.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
+          createdAt: existingUserByEmail.created_at,
+          profileImage: existingUserByEmail.profile_image || '/placeholder.svg',
+          subscriptionId: existingUserByEmail.subscription_id || null
+        };
+
+        return user;
+      }
+    }
+
+    // Шаг 3: Если пользователь не существует ни по ID, ни по email, создаем новую запись
     console.log("User not found in database, creating new user with data:", userData);
     
     // Создаем нового пользователя с ролью USER по умолчанию

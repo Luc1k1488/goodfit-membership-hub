@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/auth";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,19 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
-  const { login, userRole } = useAuth();
+  const { login, userRole, currentUser, authInitialized } = useAuth();
+  
+  // Check if user is already logged in and has appropriate role
+  useEffect(() => {
+    if (authInitialized && currentUser) {
+      console.log("User already logged in:", currentUser.role);
+      if (userRole === "ADMIN") {
+        navigate("/dashboard", { replace: true });
+      } else if (userRole === "PARTNER") {
+        navigate("/partner/dashboard", { replace: true });
+      }
+    }
+  }, [authInitialized, currentUser, userRole, navigate]);
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -25,18 +37,22 @@ const LoginPage = () => {
     try {
       await login(email, password);
       
-      // Redirect based on user role
+      // Redirect based on user role - this should happen after login validates roles
       if (userRole === "ADMIN") {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       } else if (userRole === "PARTNER") {
-        navigate("/dashboard");
+        navigate("/partner/dashboard", { replace: true });
       } else {
         // Show access denied for regular users
         setError("У вас нет прав доступа к административной панели");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
-      setError("Неправильный логин или пароль");
+      if (error.message.includes("прав доступа")) {
+        setError("У вас нет прав доступа к административной панели");
+      } else {
+        setError(error.message || "Неправильный логин или пароль");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -74,6 +90,7 @@ const LoginPage = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             
@@ -87,6 +104,7 @@ const LoginPage = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             

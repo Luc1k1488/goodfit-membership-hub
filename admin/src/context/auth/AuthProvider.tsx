@@ -21,7 +21,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (sessionError || !session) {
+      if (sessionError) {
+        console.error("Error getting session:", sessionError);
+        setCurrentUser(null);
+        setUserRole(null);
+        return;
+      }
+      
+      if (!session) {
         console.log("No active session found");
         setCurrentUser(null);
         setUserRole(null);
@@ -35,8 +42,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .eq('id', session.user.id)
         .single();
         
-      if (userError || !userData) {
+      if (userError) {
         console.error("Error fetching user data:", userError);
+        setCurrentUser(null);
+        setUserRole(null);
+        return;
+      }
+      
+      if (!userData) {
+        console.error("No user data found for ID:", session.user.id);
         setCurrentUser(null);
         setUserRole(null);
         return;
@@ -61,6 +75,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setCurrentUser(null);
       setUserRole(null);
     } finally {
+      // Always set these states regardless of success/failure
       setIsLoading(false);
       setAuthInitialized(true);
     }
@@ -76,11 +91,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session) {
           fetchCurrentUser();
+        } else {
+          // No session even though we got a SIGNED_IN event
+          console.warn("Received SIGNED_IN event but no session was provided");
+          setIsLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         console.log("User signed out");
         setCurrentUser(null);
         setUserRole(null);
+        setIsLoading(false);
       }
     });
 
@@ -100,14 +120,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
 
       if (error) {
+        console.error("Login error:", error.message);
         throw error;
       }
 
       if (!data.user) {
-        throw new Error('No user returned from authentication');
+        const noUserError = new Error('No user returned from authentication');
+        console.error(noUserError.message);
+        throw noUserError;
       }
 
       await fetchCurrentUser();
+      
+      // Check if the user has admin or partner role
+      if (userRole !== 'ADMIN' && userRole !== 'PARTNER') {
+        console.warn("User does not have admin or partner role:", userRole);
+        await logout();
+        throw new Error('У вас нет прав доступа к административной панели');
+      }
+      
       toast.success("Успешный вход");
     } catch (error: any) {
       console.error("Login error:", error);

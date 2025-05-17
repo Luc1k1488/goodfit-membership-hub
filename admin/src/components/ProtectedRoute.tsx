@@ -40,9 +40,12 @@ export const ProtectedRoute = ({
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <h1 className="text-2xl font-bold text-destructive mb-2">Доступ запрещен</h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-lg text-muted-foreground mb-4">
           У вас нет прав для доступа к панели администрирования.
         </p>
+        <Button variant="outline" onClick={() => window.location.href = "/"}>
+          Вернуться на главную
+        </Button>
       </div>
     );
   }
@@ -51,7 +54,7 @@ export const ProtectedRoute = ({
   if (requiredRole && userRole !== requiredRole) {
     // Redirect different admin levels to their appropriate dashboards
     if (userRole === "ADMIN") {
-      return <Navigate to="/admin/dashboard" replace />;
+      return <Navigate to="/dashboard" replace />;
     } else if (userRole === "PARTNER") {
       return <Navigate to="/partner/dashboard" replace />;
     } else {
@@ -61,3 +64,6 @@ export const ProtectedRoute = ({
 
   return children;
 };
+
+// Import Button for improved UI
+import { Button } from "@/components/ui/button";

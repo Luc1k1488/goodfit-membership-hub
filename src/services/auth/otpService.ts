@@ -29,9 +29,7 @@ export const sendOTP = async (contact: string): Promise<void> => {
 
       const { error } = await supabase.auth.signInWithOtp({
         phone: formattedPhone,
-        options: {
-          redirectTo: "https://goodfit-membership-hub.vercel.app/verify-code",
-        },
+        // Remove redirectTo, as it's not supported for phone OTP
       });
 
       if (error) {
@@ -79,6 +77,7 @@ export const verifyOTPCode = async (contact: string, otp: string): Promise<any> 
     }
 
     if (!data.user) {
+      console.error("Verification succeeded but no user returned");
       throw new Error('Пользователь не найден');
     }
 

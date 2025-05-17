@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import { Header } from "@/components/Header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChevronLeft, Loader2, AlertCircle } from "lucide-react";
 import { isEmail } from "@/services/auth";
+import { supabase } from "@/lib/supabaseClient";
 
 const VerifyCodePage = () => {
   const [otp, setOtp] = useState("");
@@ -29,15 +31,54 @@ const VerifyCodePage = () => {
     setError("");
     setValidateInProgress(true);
     
-    // Extract state from location or URL parameters
-    const extractStateData = () => {
-      // First check location.state
+    const extractContactInfo = async () => {
+      try {
+        // First try to get user information from Supabase session
+        // This is critical for email redirect flows
+        const { data } = await supabase.auth.getUser();
+        if (data?.user?.email || data?.user?.phone) {
+          const contactValue = data.user.email || data.user.phone || "";
+          console.log("Retrieved contact from auth session:", contactValue);
+          setContact(contactValue);
+          setContactType(isEmail(contactValue) ? "email" : "phone");
+          
+          // Check for pending registration name
+          const pendingName = localStorage.getItem('pendingRegistrationName');
+          if (pendingName) {
+            setName(pendingName);
+            setIsRegistration(true);
+          }
+          
+          setValidateInProgress(false);
+          return;
+        }
+      } catch (error) {
+        console.error("Error fetching user from auth session:", error);
+      }
+      
+      // If no session info, try location state data
       if (location.state && typeof location.state === 'object') {
         const state = location.state as { contact?: string; name?: string; isRegistration?: boolean };
         console.log("Verify page state from location:", state);
         
         if (state.contact) {
-          return state;
+          setContact(state.contact);
+          setContactType(isEmail(state.contact) ? "email" : "phone");
+          
+          if (state.name) {
+            setName(state.name);
+            setIsRegistration(true);
+          } else if (state.isRegistration) {
+            setIsRegistration(true);
+            // Try to get name from localStorage if coming from email link
+            const pendingName = localStorage.getItem('pendingRegistrationName');
+            if (pendingName) {
+              setName(pendingName);
+            }
+          }
+          
+          setValidateInProgress(false);
+          return;
         }
       }
       
@@ -48,44 +89,30 @@ const VerifyCodePage = () => {
       
       if (email || phone) {
         console.log("Verify page params:", { email, phone });
-        return { 
-          contact: email || phone || '', 
-          isRegistration: params.get('isRegistration') === 'true'
-        };
-      }
-      
-      // Return empty state if nothing found
-      return null;
-    };
-    
-    const stateData = extractStateData();
-    
-    if (stateData && stateData.contact) {
-      setContact(stateData.contact);
-      setContactType(isEmail(stateData.contact) ? "email" : "phone");
-      
-      if (stateData.name) {
-        setName(stateData.name);
-        setIsRegistration(true);
-      } else if (stateData.isRegistration) {
-        setIsRegistration(true);
-        // Try to get name from localStorage if coming from email link
-        const pendingName = localStorage.getItem('pendingRegistrationName');
-        if (pendingName) {
-          setName(pendingName);
+        const contactValue = email || phone || '';
+        setContact(contactValue);
+        setContactType(isEmail(contactValue) ? "email" : "phone");
+        setIsRegistration(params.get('isRegistration') === 'true');
+        
+        // Try to get name from localStorage if necessary
+        if (params.get('isRegistration') === 'true') {
+          const pendingName = localStorage.getItem('pendingRegistrationName');
+          if (pendingName) {
+            setName(pendingName);
+          }
         }
+        
+        setValidateInProgress(false);
+        return;
       }
       
-      // Finish validation
-      setTimeout(() => {
-        setValidateInProgress(false);
-        console.log("Validation complete, contact:", stateData.contact);
-      }, 500);
-    } else {
+      // If we still don't have contact info, show error and redirect
       console.log("No contact information provided, redirecting to login");
       toast.error("Контактные данные не указаны");
       navigate("/login", { replace: true });
-    }
+    };
+    
+    extractContactInfo();
   }, [location, navigate]);
 
   const handleVerifyOtp = async () => {
@@ -112,6 +139,11 @@ const VerifyCodePage = () => {
     try {
       console.log("Verifying OTP for contact:", contact, "with code:", otp);
       const user = await verifyOTP(contact, otp);
+      
+      if (!user) {
+        throw new Error("Ошибка верификации: пользователь не найден");
+      }
+      
       console.log("Verification successful, user:", user);
       
       toast.success(isRegistration
@@ -199,6 +231,10 @@ const VerifyCodePage = () => {
                 ? "Введите код из SMS для подтверждения" 
                 : "Введите код из письма для подтверждения"}
             </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Код отправлен на {contactType === "phone" ? "номер" : ""}
+              {" "}{contact}
+            </p>
           </div>
 
           {error && (
@@ -242,10 +278,6 @@ const VerifyCodePage = () => {
                   )}
                 />
               </div>
-              <p className="text-center text-sm text-muted-foreground mt-2">
-                Код отправлен на {contactType === "phone" ? "номер" : ""}
-                {" "}{contact}
-              </p>
             </div>
 
             <Button
