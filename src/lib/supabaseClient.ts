@@ -1,34 +1,34 @@
-
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '../types/supabase'
 
-// Ensuring correct URLs for Supabase
 const supabaseUrl = 'https://czwwnegeanikobvdndnx.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6d3duZWdlYW5pa29idmRuZG54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc0MjQ4MTUsImV4cCI6MjA2MzAwMDgxNX0.ie8SNrBRKSlfez--tmrsMV4QgznpdxjYEnKTX59Yedc'
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+// Создаем и экспортируем клиент
+const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
-// Helper functions for common Supabase operations
+// Добавляем в глобальную область для отладки
+if (typeof window !== 'undefined') {
+  window.supabase = supabase
+  console.log('Supabase client now available as window.supabase')
+}
 
-// Increment the booked count for a class
+// Вспомогательные функции остаются без изменений
 export const incrementBookedCount = async (classId: string) => {
   const { error } = await supabase.rpc('increment_booked_count', { class_id: classId })
   if (error) console.error('Error incrementing booked count:', error)
 }
 
-// Decrement the booked count for a class
 export const decrementBookedCount = async (classId: string) => {
   const { error } = await supabase.rpc('decrement_booked_count', { class_id: classId })
   if (error) console.error('Error decrementing booked count:', error)
 }
 
-// Check if a user is authenticated
 export const isAuthenticated = async () => {
   const { data, error } = await supabase.auth.getSession()
   return data.session !== null && !error
 }
 
-// Get current user data
 export const getCurrentUser = async () => {
   const { data: authData } = await supabase.auth.getSession()
   
@@ -56,25 +56,4 @@ export const getCurrentUser = async () => {
   }
 }
 
-// SQL to be executed on Supabase:
-/*
--- Create stored procedure to increment booked_count
-CREATE OR REPLACE FUNCTION increment_booked_count(class_id UUID)
-RETURNS void AS $$
-BEGIN
-  UPDATE classes 
-  SET booked_count = booked_count + 1
-  WHERE id = class_id;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create stored procedure to decrement booked_count
-CREATE OR REPLACE FUNCTION decrement_booked_count(class_id UUID)
-RETURNS void AS $$
-BEGIN
-  UPDATE classes 
-  SET booked_count = GREATEST(0, booked_count - 1)
-  WHERE id = class_id;
-END;
-$$ LANGUAGE plpgsql;
-*/
+export default supabase
