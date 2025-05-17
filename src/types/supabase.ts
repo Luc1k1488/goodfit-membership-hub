@@ -1,196 +1,79 @@
+import { createClient } from '@supabase/supabase-js'
+import { Database } from '../types/supabase'
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+// Ensuring correct URLs for Supabase
+const supabaseUrl = 'https://czwwnegeanikobvdndnx.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6d3duZWdlYW5pa29idmRuZG54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc0MjQ4MTUsImV4cCI6MjA2MzAwMDgxNX0.ie8SNrBRKSlfez--tmrsMV4QgznpdxjYEnKTX59Yedc'
 
-export interface Database {
-  public: {
-    Tables: {
-      users: {
-        Row: {
-          id: string
-          name: string
-          email: string | null
-          phone: string | null
-          role: string
-          created_at: string
-          profile_image: string | null
-          subscription_id: string | null
-        }
-        Insert: {
-          id?: string
-          name: string
-          email?: string | null
-          phone?: string | null
-          role?: string
-          created_at?: string
-          profile_image?: string | null
-          subscription_id?: string | null
-        }
-        Update: {
-          id?: string
-          name?: string
-          email?: string | null
-          phone?: string | null
-          role?: string
-          created_at?: string
-          profile_image?: string | null
-          subscription_id?: string | null
-        }
-      }
-      gyms: {
-        Row: {
-          id: string
-          name: string
-          description: string
-          address: string
-          city: string
-          main_image: string
-          images: string[]
-          features: string[]
-          category: string[]
-          working_hours: {
-            open: string
-            close: string
-          }
-          rating: number
-          review_count: number
-          owner_id: string | null
-        }
-        Insert: {
-          id?: string
-          name: string
-          description: string
-          address: string
-          city: string
-          main_image: string
-          images: string[]
-          features: string[]
-          category: string[]
-          working_hours: {
-            open: string
-            close: string
-          }
-          rating?: number
-          review_count?: number
-          owner_id?: string | null
-        }
-        Update: {
-          id?: string
-          name?: string
-          description?: string
-          address?: string
-          city?: string
-          main_image?: string
-          images?: string[]
-          features?: string[]
-          category?: string[]
-          working_hours?: {
-            open: string
-            close: string
-          }
-          rating?: number
-          review_count?: number
-          owner_id?: string | null
-        }
-      }
-      classes: {
-        Row: {
-          id: string
-          gym_id: string
-          title: string
-          description: string
-          instructor: string
-          start_time: string
-          end_time: string
-          category: string
-          capacity: number
-          booked_count: number
-        }
-        Insert: {
-          id?: string
-          gym_id: string
-          title: string
-          description: string
-          instructor: string
-          start_time: string
-          end_time: string
-          category: string
-          capacity: number
-          booked_count?: number
-        }
-        Update: {
-          id?: string
-          gym_id?: string
-          title?: string
-          description?: string
-          instructor?: string
-          start_time?: string
-          end_time?: string
-          category?: string
-          capacity?: number
-          booked_count?: number
-        }
-      }
-      bookings: {
-        Row: {
-          id: string
-          user_id: string
-          class_id: string
-          gym_id: string
-          status: string
-          date_time: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          class_id: string
-          gym_id: string
-          status?: string
-          date_time: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          class_id?: string
-          gym_id?: string
-          status?: string
-          date_time?: string
-          created_at?: string
-        }
-      }
-      subscriptions: {
-        Row: {
-          id: string
-          name: string
-          price: number
-          duration_days: number
-          features: string[]
-          is_popular: boolean
-        }
-        Insert: {
-          id?: string
-          name: string
-          price: number
-          duration_days: number
-          features: string[]
-          is_popular?: boolean
-        }
-        Update: {
-          id?: string
-          name?: string
-          price?: number
-          duration_days?: number
-          features?: string[]
-          is_popular?: boolean
-        }
-      }
-    }
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+
+// Helper functions for common Supabase operations
+
+// Increment the booked count for a class
+export const incrementBookedCount = async (classId: string) => {
+  const { error } = await supabase.rpc('increment_booked_count', { class_id: classId })
+  if (error) console.error('Error incrementing booked count:', error)
+}
+
+// Decrement the booked count for a class
+export const decrementBookedCount = async (classId: string) => {
+  const { error } = await supabase.rpc('decrement_booked_count', { class_id: classId })
+  if (error) console.error('Error decrementing booked count:', error)
+}
+
+// Check if a user is authenticated
+export const isAuthenticated = async () => {
+  const { data, error } = await supabase.auth.getSession()
+  return data.session !== null && !error
+}
+
+// Get current user data
+export const getCurrentUser = async () => {
+  const { data: authData } = await supabase.auth.getSession()
+  
+  if (!authData.session) return null
+  
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', authData.session.user.id)
+    .single()
+    
+  if (error) {
+    console.error('Error fetching user data:', error)
+    return null
+  }
+  
+  return {
+    id: data.id,
+    name: data.name || '',
+    email: data.email || '',
+    phone: data.phone || '',
+    role: data.role,
+    createdAt: data.created_at,
+    profileImage: data.profile_image || '/placeholder.svg'
   }
 }
+
+// SQL to be executed on Supabase:
+/*
+-- Create stored procedure to increment booked_count
+CREATE OR REPLACE FUNCTION increment_booked_count(class_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE classes 
+  SET booked_count = booked_count + 1
+  WHERE id = class_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create stored procedure to decrement booked_count
+CREATE OR REPLACE FUNCTION decrement_booked_count(class_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE classes 
+  SET booked_count = GREATEST(0, booked_count - 1)
+  WHERE id = class_id;
+END;
+$$ LANGUAGE plpgsql;
+*/
