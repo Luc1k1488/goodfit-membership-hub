@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,27 +19,15 @@ const ProfilePage = () => {
   const { currentUser, isLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("bookings");
   const navigate = useNavigate();
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
+  // Monitor auth status and redirect if not authenticated
   useEffect(() => {
-    const checkAuth = async () => {
-      console.log("ProfilePage: checking auth state:", { currentUser, isLoading });
-      
-      // Only redirect if not loading and we've completed initial load check
-      if (!isLoading && !currentUser && initialLoadComplete) {
-        console.log("User not authenticated, redirecting to login");
-        toast.error("Необходимо войти в систему");
-        navigate("/login");
-      }
-      
-      // Mark initial load as complete if we're not loading
-      if (!isLoading && !initialLoadComplete) {
-        setInitialLoadComplete(true);
-      }
-    };
-    
-    checkAuth();
-  }, [currentUser, isLoading, navigate, initialLoadComplete]);
+    if (!isLoading && !currentUser) {
+      console.log("User not authenticated, redirecting to login");
+      toast.error("Необходимо войти в систему");
+      navigate("/login");
+    }
+  }, [currentUser, isLoading, navigate]);
   
   const handleLogout = async () => {
     try {
@@ -52,6 +39,7 @@ const ProfilePage = () => {
     }
   };
   
+  // Show loading indicator while auth state is being determined
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -61,16 +49,17 @@ const ProfilePage = () => {
     );
   }
   
-  // If not loading and no user, we should be redirected by the useEffect
+  // If auth check is complete and no user, let the useEffect handle redirect
   if (!currentUser) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Перенаправление...</p>
+        <p className="text-lg">Перенаправление на страницу входа...</p>
       </div>
     );
   }
   
+  // Now we can safely render the profile content
   // Filter bookings by status
   const activeBookings = bookings.filter(booking => booking.status === 'BOOKED');
   const completedBookings = bookings.filter(booking => booking.status === 'COMPLETED');

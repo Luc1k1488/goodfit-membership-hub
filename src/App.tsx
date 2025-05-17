@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,7 +20,7 @@ import PartnerDashboardPage from "./pages/PartnerDashboardPage";
 import BookingPage from "./pages/BookingPage";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./context/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -29,8 +28,6 @@ const queryClient = new QueryClient();
 // Protected route component
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole?: "USER" | "PARTNER" | "ADMIN" }) => {
   const { currentUser, isLoading } = useAuth();
-
-  // Add delay to loading to prevent flashing
   const [showLoader, setShowLoader] = useState(false);
   
   useEffect(() => {
@@ -44,6 +41,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
     return () => clearTimeout(timer);
   }, [isLoading]);
 
+  // Don't render anything until we're sure about the auth state
   if (isLoading) {
     if (!showLoader) {
       return null; // Don't show anything initially
@@ -57,10 +55,12 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
     );
   }
 
+  // Only check auth after loading is complete
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
 
+  // Check role requirements
   if (requiredRole && currentUser.role !== requiredRole) {
     if (currentUser.role === "ADMIN") {
       return <Navigate to="/admin-dashboard" replace />;
@@ -73,9 +73,6 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
 
   return children;
 };
-
-// Import useState at the top
-import { useState } from "react";
 
 const AppRoutes = () => {
   return (

@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<"USER" | "PARTNER" | "ADMIN" | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   // Check user session and set current user on component mount
   useEffect(() => {
@@ -65,6 +66,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUserRole(null);
       } finally {
         setIsLoading(false);
+        setAuthInitialized(true);
       }
     };
 
@@ -76,6 +78,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session) {
+          setIsLoading(true);
           try {
             // Get or create user in DB when signed in
             const userData: Record<string, string> = {};
@@ -99,6 +102,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setUserRole(null);
           } finally {
             setIsLoading(false);
+            setAuthInitialized(true);
           }
         }
       } else if (event === 'SIGNED_OUT') {
@@ -106,6 +110,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setCurrentUser(null);
         setUserRole(null);
         setIsLoading(false);
+        setAuthInitialized(true);
       }
     });
 
