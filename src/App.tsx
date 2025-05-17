@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
-import { AppProvider } from "@/context/AppContext";
+import { AppProvider } from "@/context/AppProvider";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { BottomNavBar } from "@/components/BottomNavBar";
 import GymsPage from "./pages/GymsPage";
@@ -35,46 +35,47 @@ const queryClient = new QueryClient({
 
 // Improved ProtectedRoute component with better loading behavior and debugging
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole?: "USER" | "PARTNER" | "ADMIN" }) => {
-  const { currentUser, isLoading, authInitialized } = useAuth();
+  const { currentUser, isLoading, authInitialized, userRole } = useAuth();
   
   // Add explicit debugging logs
-  console.log("ProtectedRoute:", { 
+  console.log("ProtectedRoute check:", { 
     authInitialized, 
     isLoading, 
     hasUser: !!currentUser, 
-    userRole: currentUser?.role 
+    userRole, 
+    requiredRole 
   });
   
-  // Show loader if authentication is not yet initialized
+  // If auth is not initialized yet, show loader
   if (!authInitialized) {
     console.log("ProtectedRoute: Auth not initialized, showing loader");
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Инициализация...</p>
+        <p className="text-lg">Инициализация авторизации...</p>
       </div>
     );
   }
   
-  // Show loader if still loading user data
+  // If auth is initialized but still loading user data, show a loader
   if (isLoading) {
-    console.log("ProtectedRoute: Auth is loading, showing loader");
+    console.log("ProtectedRoute: Auth initialized but loading, showing loader");
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Загрузка...</p>
+        <p className="text-lg">Загрузка данных пользователя...</p>
       </div>
     );
   }
 
-  // Only redirect if auth is initialized AND there's no user
-  if (!currentUser) {
-    console.log("ProtectedRoute: Auth initialized but no user, redirecting to login");
+  // Important: Only redirect if auth is fully initialized AND there's no user
+  if (authInitialized && !currentUser) {
+    console.log("ProtectedRoute: Auth initialized, no user found, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
   // Check role requirements if auth is initialized and user exists
-  if (requiredRole && currentUser.role !== requiredRole) {
+  if (requiredRole && currentUser && currentUser.role !== requiredRole) {
     console.log("ProtectedRoute: Wrong role, redirecting to appropriate dashboard");
     
     if (currentUser.role === "ADMIN") {
@@ -86,7 +87,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
     }
   }
 
-  console.log("ProtectedRoute: Rendering protected content");
+  console.log("ProtectedRoute: All checks passed, rendering protected content");
   return children;
 };
 

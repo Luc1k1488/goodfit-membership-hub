@@ -299,8 +299,8 @@ export const getCurrentUserSession = async (): Promise<{
         .eq('id', session.user.id)
         .single();
 
-      if (userError) {
-        console.log("User not found in database, creating user entry");
+      if (userError || !userData) {
+        console.log("User not found in database, attempting to create user entry");
         
         // User authenticated but not in users table - create entry with available data
         const authUser = session.user;
@@ -323,25 +323,20 @@ export const getCurrentUserSession = async (): Promise<{
         }
       }
 
-      if (userData) {
-        // Преобразуем данные пользователя из базы данных в формат приложения
-        const user: User = {
-          id: userData.id,
-          name: userData.name || '',
-          email: userData.email || '',
-          phone: userData.phone || '',
-          role: (userData.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
-          createdAt: userData.created_at,
-          profileImage: userData.profile_image || '/placeholder.svg',
-          subscriptionId: userData.subscription_id || null
-        };
+      // Преобразуем данные пользователя из базы данных в формат приложения
+      const user: User = {
+        id: userData.id,
+        name: userData.name || '',
+        email: userData.email || '',
+        phone: userData.phone || '',
+        role: (userData.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
+        createdAt: userData.created_at,
+        profileImage: userData.profile_image || '/placeholder.svg',
+        subscriptionId: userData.subscription_id || null
+      };
 
-        console.log("User data retrieved:", user);
-        return { session, user };
-      }
-      
-      console.log("User data not found in the database");
-      return { session, user: null };
+      console.log("User data retrieved:", user);
+      return { session, user };
     } catch (error) {
       console.error("Error getting user data:", error);
       return { session, user: null };

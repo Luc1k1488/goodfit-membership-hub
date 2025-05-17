@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
@@ -48,7 +49,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsLoading(true);
     try {
       const { session, user } = await getCurrentUserSession();
-      if (user) {
+      
+      if (session && user) {
         console.log("User found:", user);
         setCurrentUser(user);
         setUserRole(user.role);
@@ -62,44 +64,47 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setCurrentUser(null);
       setUserRole(null);
     } finally {
+      // Always set these states regardless of success/failure
       setIsLoading(false);
       setAuthInitialized(true);
     }
   };
 
   useEffect(() => {
+    // Initial fetch of user data
     fetchCurrentUser();
 
+    // Session expiry check
     const sessionCheckInterval = setInterval(() => {
       supabase.auth.getSession().then(({ data }) => {
         if (!data.session && currentUser) {
           console.log("Session expired, logging out");
           setCurrentUser(null);
           setUserRole(null);
-          setAuthInitialized(true);
-          setIsLoading(false);
+          // Don't reset authInitialized here since we've already initialized
         }
       });
     }, 60000);
 
+    // Auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, "Session exists:", !!session);
-      setIsLoading(true);
-
+      
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session) {
+          setIsLoading(true);
           try {
             const userData: Record<string, string> = {};
             if (session.user.email) userData.email = session.user.email;
             if (session.user.phone) userData.phone = session.user.phone;
+            
             const user = await getUserOrCreate(session.user.id, userData);
             setCurrentUser(user);
             setUserRole(user.role);
             console.log("User data updated after auth change:", user);
           } catch (error) {
             console.error("Error during auth state change:", error);
-            setCurrentUser(null);
-            setUserRole(null);
+            // Don't reset user here if there's an error, only if explicitly signed out
           } finally {
             setIsLoading(false);
           }
@@ -108,8 +113,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log("User signed out");
         setCurrentUser(null);
         setUserRole(null);
-        setIsLoading(false);
-      } else {
         setIsLoading(false);
       }
     });
@@ -165,7 +168,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       throw error;
     } finally {
       setIsLoading(false);
-      setAuthInitialized(true);
     }
   };
 
@@ -181,7 +183,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       throw error;
     } finally {
       setIsLoading(false);
-      setAuthInitialized(true);
     }
   };
 

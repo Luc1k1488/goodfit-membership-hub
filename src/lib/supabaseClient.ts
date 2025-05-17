@@ -33,7 +33,7 @@ export const decrementBookedCount = async (classId: string) => {
 }
 
 // User session utility functions moved from types/supabase.ts
-export type SupabaseUser = {
+export interface SupabaseUser {
   id: string
   name: string
   email: string
