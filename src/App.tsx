@@ -14,6 +14,7 @@ import ClassesPage from "./pages/ClassesPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import VerifyCodePage from "./pages/VerifyCodePage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import PartnerDashboardPage from "./pages/PartnerDashboardPage";
@@ -60,6 +61,7 @@ const AppRoutes = () => {
       <Route path="/subscriptions" element={<SubscriptionsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify-code" element={<VerifyCodePage />} />
       <Route 
         path="/profile" 
         element={

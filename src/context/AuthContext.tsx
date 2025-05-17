@@ -196,13 +196,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // If user doesn't exist in our table, create a new record
       if (userError) {
+        // Get pending name from localStorage if exists
+        const pendingName = localStorage.getItem('pendingRegistrationName') || '';
+        localStorage.removeItem('pendingRegistrationName'); // Clear it after using
+        
         // Create new user with default role USER
         const { data: newUser, error: createError } = await supabase
           .from('users')
           .insert([
             {
               id: data.user.id,
-              name: '',  // Will be updated later
+              name: pendingName,
               phone: formattedPhone,
               role: 'USER',
               created_at: new Date().toISOString()
