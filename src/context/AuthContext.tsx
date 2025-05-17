@@ -154,7 +154,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       clearInterval(sessionCheckInterval);
     };
-  }, [currentUser]); // Add currentUser as dependency to detect session changes
+  }, [currentUser]) // Add currentUser as dependency to detect session changes
 
   const login = async (contact: string): Promise<void> => {
     setIsLoading(true);
