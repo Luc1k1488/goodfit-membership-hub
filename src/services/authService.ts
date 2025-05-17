@@ -31,18 +31,18 @@ export const sendOTP = async (contact: string): Promise<void> => {
     throw new Error('Контактные данные не указаны');
   }
   
-  if (isEmail(contact)) {
-    console.log("Sending OTP to email:", contact);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: contact,
-    });
-    
-    if (error) {
-      console.error("SignInWithOtp error:", error);
-      throw error;
-    }
-  } else {
-    try {
+  try {
+    if (isEmail(contact)) {
+      console.log("Sending OTP to email:", contact);
+      const { error } = await supabase.auth.signInWithOtp({
+        email: contact,
+      });
+      
+      if (error) {
+        console.error("SignInWithOtp error:", error);
+        throw error;
+      }
+    } else {
       const formattedPhone = formatPhoneNumber(contact);
       console.log("Sending OTP to phone:", formattedPhone);
       
@@ -54,13 +54,11 @@ export const sendOTP = async (contact: string): Promise<void> => {
         console.error("SignInWithOtp error:", error);
         throw error;
       }
-    } catch (error) {
-      console.error("Phone OTP error:", error);
-      throw error;
     }
+  } catch (error) {
+    console.error("OTP sending error:", error);
+    throw error;
   }
-  
-  return;
 };
 
 // Функция для проверки OTP кода

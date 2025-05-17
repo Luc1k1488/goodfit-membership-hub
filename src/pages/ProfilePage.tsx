@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,8 @@ const ProfilePage = () => {
   const { currentUser, isLoading, authInitialized, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("bookings");
   
-  // Упрощенная логика загрузки
-  if (!authInitialized || isLoading) {
+  // Simplified loading logic - ProtectedRoute handles most auth checks
+  if (isLoading || !authInitialized) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
@@ -29,8 +30,7 @@ const ProfilePage = () => {
     );
   }
   
-  // Если после инициализации нет пользователя, показываем ошибку
-  // Это не должно происходить из-за ProtectedRoute, но оставим как fallback
+  // This should not happen due to ProtectedRoute, but kept as safety
   if (!currentUser) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -206,7 +206,7 @@ const ProfilePage = () => {
                   <p className="mb-4 text-muted-foreground">
                     У вас пока нет записей на занятия
                   </p>
-                  <Button className="bg-blue-500 text-white" asChild>
+                  <Button className="w-full md:w-auto bg-blue-500 text-white" asChild>
                     <Link to="/classes">Найти занятия</Link>
                   </Button>
                 </div>

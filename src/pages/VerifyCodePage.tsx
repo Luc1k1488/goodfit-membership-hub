@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -76,7 +77,7 @@ const VerifyCodePage = () => {
         }
       }
       
-      // Завершение валидации
+      // Finish validation
       setTimeout(() => {
         setValidateInProgress(false);
         console.log("Validation complete, contact:", stateData.contact);
@@ -88,9 +89,7 @@ const VerifyCodePage = () => {
     }
   }, [location, navigate]);
 
-  const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
+  const handleVerifyOtp = async () => {
     if (validateInProgress) {
       setError("Валидация данных, пожалуйста подождите");
       return;
@@ -164,8 +163,7 @@ const VerifyCodePage = () => {
     }
   };
 
-  // Отображаем загрузку, если проверка данных еще не завершена
-  // или идет процесс авторизации
+  // Show loading if validation is in progress or auth is loading
   if (validateInProgress || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -211,56 +209,13 @@ const VerifyCodePage = () => {
             </Alert>
           )}
 
-          <form className="space-y-6" onSubmit={(e) => {
-            e.preventDefault();
-            
-            if (validateInProgress) {
-              setError("Валидация данных, пожалуйста подождите");
-              return;
-            }
-
-            if (!contact) {
-              setError("Контактные данные не указаны");
-              toast.error("Ошибка: контактные данные не указаны");
-              setTimeout(() => navigate("/login", { replace: true }), 1500);
-              return;
-            }
-            
-            if (!otp || otp.length < 6) {
-              setError("Пожалуйста, введите полный код подтверждения");
-              return;
-            }
-            
-            setIsSubmitting(true);
-            setError("");
-
-            verifyOTP(contact, otp)
-              .then(user => {
-                console.log("Verification successful, user:", user);
-                
-                toast.success(isRegistration
-                  ? "Регистрация успешно завершена!"
-                  : `Добро пожаловать${user.name ? `, ${user.name}` : ""}!`
-                );
-
-                // Redirect based on user role with replace: true
-                if (user.role === "ADMIN") {
-                  navigate("/admin-dashboard", { replace: true });
-                } else if (user.role === "PARTNER") {
-                  navigate("/partner-dashboard", { replace: true });
-                } else {
-                  navigate("/profile", { replace: true });
-                }
-              })
-              .catch(error => {
-                console.error("OTP verification error:", error);
-                setError(error.message || "Ошибка проверки кода");
-                toast.error(error.message || "Ошибка проверки кода");
-              })
-              .finally(() => {
-                setIsSubmitting(false);
-              });
-          }}>
+          <form 
+            className="space-y-6" 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleVerifyOtp();
+            }}
+          >
             <div className="space-y-4">
               <Label htmlFor="otp">
                 {contactType === "phone" 
@@ -322,29 +277,7 @@ const VerifyCodePage = () => {
               <Button
                 variant="link"
                 type="button"
-                onClick={() => {
-                  if (!contact) {
-                    setError("Контактные данные не указаны");
-                    toast.error("Ошибка: контактные данные не указаны");
-                    return;
-                  }
-
-                  setIsSubmitting(true);
-                  setError("");
-
-                  (isRegistration && name ? register(name, contact) : login(contact))
-                    .then(() => {
-                      toast.success("Новый код отправлен");
-                    })
-                    .catch(error => {
-                      console.error("Error resending code:", error);
-                      setError(error.message || "Ошибка отправки кода");
-                      toast.error(error.message || "Ошибка отправки кода");
-                    })
-                    .finally(() => {
-                      setIsSubmitting(false);
-                    });
-                }}
+                onClick={handleResendCode}
                 className="text-blue-500 p-0"
                 disabled={isSubmitting}
               >

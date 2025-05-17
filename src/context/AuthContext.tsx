@@ -47,7 +47,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Функция получения текущего пользователя
   const fetchCurrentUser = async () => {
     console.log("Fetching current user...");
-    setIsLoading(true);
     
     try {
       const { session, user } = await getCurrentUserSession();
@@ -66,27 +65,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setCurrentUser(null);
       setUserRole(null);
     } finally {
-      // Гарантируем, что isLoading будет установлен в false только после всех операций
+      // Ensure loading state is set to false only AFTER a delay
       setTimeout(() => {
         setIsLoading(false);
         setAuthInitialized(true);
         console.log("Auth initialized, loading complete");
-      }, 1000); // Увеличенная задержка для стабильности
+      }, 1000);
     }
   };
 
-  // Check user session and set current user on component mount
+  // Initialize auth state on mount
   useEffect(() => {
-    // Инициализация при монтировании
+    // First initialization
     fetchCurrentUser();
 
     // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event);
       
+      // First set loading to true for any auth event
+      setIsLoading(true);
+      
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session) {
-          setIsLoading(true);
           try {
             // Get or create user in DB when signed in
             const userData: Record<string, string> = {};
@@ -114,7 +115,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               setIsLoading(false);
               setAuthInitialized(true);
               console.log("Auth state change processed, loading complete");
-            }, 1000); // Увеличенная задержка для стабильности
+            }, 1000);
           }
         }
       } else if (event === 'SIGNED_OUT') {
@@ -126,13 +127,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setTimeout(() => {
           setIsLoading(false);
           setAuthInitialized(true);
-        }, 1000); // Увеличенная задержка для стабильности
+          console.log("Sign out processed, loading complete");
+        }, 1000);
+      } else {
+        // For any other event, ensure we're not stuck in loading state
+        setTimeout(() => {
+          setIsLoading(false);
+          setAuthInitialized(true);
+          console.log("Other auth event processed, loading complete");
+        }, 1000);
       }
     });
 
-    // Регулярная проверка сессии
+    // Regular session check
     const sessionCheckInterval = setInterval(() => {
-      console.log("Periodic session check");
       supabase.auth.getSession().then(({ data }) => {
         if (!data.session && currentUser) {
           console.log("Session expired, logging out");
@@ -142,7 +150,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setIsLoading(false);
         }
       });
-    }, 60000); // Проверка каждую минуту
+    }, 60000); // Check every minute
 
     return () => {
       if (authListener && authListener.subscription) {
@@ -279,7 +287,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     userRole
   };
 
-  // Обертка для отладки состояний аутентификации
+  // For debugging auth states
   useEffect(() => {
     console.log("Auth state updated:", { 
       isLoading, 

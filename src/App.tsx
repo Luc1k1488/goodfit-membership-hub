@@ -21,7 +21,7 @@ import PartnerDashboardPage from "./pages/PartnerDashboardPage";
 import BookingPage from "./pages/BookingPage";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./context/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -33,11 +33,11 @@ const queryClient = new QueryClient({
   },
 });
 
-// Improved ProtectedRoute component with stable loading state
+// Improved ProtectedRoute component with consistent loading behavior
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole?: "USER" | "PARTNER" | "ADMIN" }) => {
   const { currentUser, isLoading, authInitialized } = useAuth();
   
-  // Always show loader while authentication is still initializing or loading
+  // Always show loader while authentication is initializing or loading
   if (!authInitialized || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
