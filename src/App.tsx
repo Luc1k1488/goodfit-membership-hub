@@ -33,16 +33,16 @@ const queryClient = new QueryClient({
   },
 });
 
-// Protected route component - переработанная версия с улучшенной защитой
+// Improved ProtectedRoute component with stable loading state
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole?: "USER" | "PARTNER" | "ADMIN" }) => {
   const { currentUser, isLoading, authInitialized } = useAuth();
   
-  // Always show loader while authentication is initializing or loading
+  // Always show loader while authentication is still initializing or loading
   if (!authInitialized || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Проверка авторизации...</p>
+        <p className="text-lg">Загрузка...</p>
       </div>
     );
   }

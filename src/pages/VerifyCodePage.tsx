@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -81,7 +80,7 @@ const VerifyCodePage = () => {
       setTimeout(() => {
         setValidateInProgress(false);
         console.log("Validation complete, contact:", stateData.contact);
-      }, 300);
+      }, 500);
     } else {
       console.log("No contact information provided, redirecting to login");
       toast.error("Контактные данные не указаны");
@@ -122,7 +121,7 @@ const VerifyCodePage = () => {
         : `Добро пожаловать${user.name ? `, ${user.name}` : ""}!`
       );
 
-      // Redirect based on user role with replace: true для предотвращения возврата назад
+      // Redirect based on user role with replace: true for preventing return back
       if (user.role === "ADMIN") {
         navigate("/admin-dashboard", { replace: true });
       } else if (user.role === "PARTNER") {
@@ -212,7 +211,56 @@ const VerifyCodePage = () => {
             </Alert>
           )}
 
-          <form className="space-y-6" onSubmit={handleVerifyOtp}>
+          <form className="space-y-6" onSubmit={(e) => {
+            e.preventDefault();
+            
+            if (validateInProgress) {
+              setError("Валидация данных, пожалуйста подождите");
+              return;
+            }
+
+            if (!contact) {
+              setError("Контактные данные не указаны");
+              toast.error("Ошибка: контактные данные не указаны");
+              setTimeout(() => navigate("/login", { replace: true }), 1500);
+              return;
+            }
+            
+            if (!otp || otp.length < 6) {
+              setError("Пожалуйста, введите полный код подтверждения");
+              return;
+            }
+            
+            setIsSubmitting(true);
+            setError("");
+
+            verifyOTP(contact, otp)
+              .then(user => {
+                console.log("Verification successful, user:", user);
+                
+                toast.success(isRegistration
+                  ? "Регистрация успешно завершена!"
+                  : `Добро пожаловать${user.name ? `, ${user.name}` : ""}!`
+                );
+
+                // Redirect based on user role with replace: true
+                if (user.role === "ADMIN") {
+                  navigate("/admin-dashboard", { replace: true });
+                } else if (user.role === "PARTNER") {
+                  navigate("/partner-dashboard", { replace: true });
+                } else {
+                  navigate("/profile", { replace: true });
+                }
+              })
+              .catch(error => {
+                console.error("OTP verification error:", error);
+                setError(error.message || "Ошибка проверки кода");
+                toast.error(error.message || "Ошибка проверки кода");
+              })
+              .finally(() => {
+                setIsSubmitting(false);
+              });
+          }}>
             <div className="space-y-4">
               <Label htmlFor="otp">
                 {contactType === "phone" 
@@ -233,7 +281,6 @@ const VerifyCodePage = () => {
                       {slots.map((slot, i) => (
                         <InputOTPSlot
                           key={i}
-                          index={i}
                           {...slot}
                         />
                       ))}
@@ -275,7 +322,29 @@ const VerifyCodePage = () => {
               <Button
                 variant="link"
                 type="button"
-                onClick={handleResendCode}
+                onClick={() => {
+                  if (!contact) {
+                    setError("Контактные данные не указаны");
+                    toast.error("Ошибка: контактные данные не указаны");
+                    return;
+                  }
+
+                  setIsSubmitting(true);
+                  setError("");
+
+                  (isRegistration && name ? register(name, contact) : login(contact))
+                    .then(() => {
+                      toast.success("Новый код отправлен");
+                    })
+                    .catch(error => {
+                      console.error("Error resending code:", error);
+                      setError(error.message || "Ошибка отправки кода");
+                      toast.error(error.message || "Ошибка отправки кода");
+                    })
+                    .finally(() => {
+                      setIsSubmitting(false);
+                    });
+                }}
                 className="text-blue-500 p-0"
                 disabled={isSubmitting}
               >

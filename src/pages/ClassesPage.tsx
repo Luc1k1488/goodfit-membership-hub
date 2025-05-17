@@ -20,12 +20,12 @@ import {
 
 const ClassesPage = () => {
   const { classes, getGymById } = useApp();
-  const { isLoading: authLoading, authInitialized } = useAuth();
+  const { currentUser, isLoading, authInitialized } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredClasses, setFilteredClasses] = useState<FitnessClass[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [isLoading, setIsLoading] = useState(true);
+  const [isClassesLoading, setIsClassesLoading] = useState(true);
   const navigate = useNavigate();
   
   // Generate dates for the next 7 days for the date selector
@@ -34,11 +34,11 @@ const ClassesPage = () => {
   // Filter classes based on search term and selected date
   useEffect(() => {
     // Не начинаем фильтрацию, пока аутентификация не инициализирована
-    if (authLoading || !authInitialized) {
+    if (isLoading || !authInitialized) {
       return;
     }
     
-    setIsLoading(true);
+    setIsClassesLoading(true);
     
     const timer = setTimeout(() => {
       try {
@@ -71,12 +71,12 @@ const ClassesPage = () => {
         console.error("Error filtering classes:", error);
         setFilteredClasses([]);
       } finally {
-        setIsLoading(false);
+        setIsClassesLoading(false);
       }
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [classes, searchTerm, selectedDate, getGymById, authLoading, authInitialized]);
+  }, [classes, searchTerm, selectedDate, getGymById, isLoading, authInitialized]);
   
   // Format day name
   const formatDayName = (date: Date): string => {
@@ -94,11 +94,23 @@ const ClassesPage = () => {
   };
   
   // Отображаем загрузку, если проверка авторизации еще не завершена
-  if (authLoading || !authInitialized) {
+  if (!authInitialized || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Проверка авторизации...</p>
+        <p className="text-lg">Загрузка данных...</p>
+      </div>
+    );
+  }
+  
+  // Проверяем, что пользователь авторизован
+  if (!currentUser) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-lg mb-4">Для просмотра занятий необходимо авторизоваться</p>
+        <Button asChild>
+          <Link to="/login">Войти</Link>
+        </Button>
       </div>
     );
   }
@@ -179,7 +191,7 @@ const ClassesPage = () => {
         </div>
         
         {/* Class listings */}
-        {isLoading ? (
+        {isClassesLoading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="mt-2">Загрузка занятий...</p>

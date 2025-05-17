@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setIsLoading(false);
         setAuthInitialized(true);
         console.log("Auth initialized, loading complete");
-      }, 800); // Увеличенная задержка для стабильности
+      }, 1000); // Увеличенная задержка для стабильности
     }
   };
 
@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               setIsLoading(false);
               setAuthInitialized(true);
               console.log("Auth state change processed, loading complete");
-            }, 800); // Увеличенная задержка для стабильности
+            }, 1000); // Увеличенная задержка для стабильности
           }
         }
       } else if (event === 'SIGNED_OUT') {
@@ -126,7 +126,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setTimeout(() => {
           setIsLoading(false);
           setAuthInitialized(true);
-        }, 800); // Увеличенная задержка для стабильности
+        }, 1000); // Увеличенная задержка для стабильности
       }
     });
 
@@ -170,7 +170,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.error(errorMessage);
       throw error;
     } finally {
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
     }
   };
 
@@ -216,7 +218,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       setTimeout(() => {
         setIsLoading(false);
-      }, 500);
+      }, 1000);
     }
   };
 
@@ -234,7 +236,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       setTimeout(() => {
         setIsLoading(false);
-      }, 500);
+      }, 1000);
     }
   };
 
@@ -260,7 +262,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.error(errorMessage);
       throw error;
     } finally {
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
     }
   };
 
