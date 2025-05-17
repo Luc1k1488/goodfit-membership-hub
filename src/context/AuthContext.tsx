@@ -172,7 +172,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const verifyOTP = async (phone: string, otp: string): Promise<User> => {
     setIsLoading(true);
-    console.log("Starting OTP verification for phone:", phone);
+    console.log("Starting OTP verification for phone:", phone, "with code:", otp);
     
     try {
       const formattedPhone = formatPhoneNumber(phone);

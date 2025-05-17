@@ -51,22 +51,27 @@ const VerifyCodePage = () => {
       }
       
       console.log("Attempting to verify OTP:", { phone, otp, isRegistration });
+      
+      // Call verifyOTP and await the result
       const user = await verifyOTP(phone, otp);
       console.log("Verification successful, user:", user);
       
+      // Show success toast
       toast.success(isRegistration 
         ? "Регистрация успешно завершена!" 
         : `Добро пожаловать${user.name ? ', ' + user.name : ''}!`
       );
       
-      // Redirect based on role
-      if (user.role === "ADMIN") {
-        navigate("/admin-dashboard");
-      } else if (user.role === "PARTNER") {
-        navigate("/partner-dashboard");
-      } else {
-        navigate("/profile");
-      }
+      // Redirect based on role with slight delay to show toast
+      setTimeout(() => {
+        if (user.role === "ADMIN") {
+          navigate("/admin-dashboard");
+        } else if (user.role === "PARTNER") {
+          navigate("/partner-dashboard");
+        } else {
+          navigate("/profile");
+        }
+      }, 500);
       
     } catch (error: any) {
       console.error("OTP verification error:", error);
