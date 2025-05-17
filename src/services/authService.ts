@@ -3,6 +3,11 @@ import { supabase } from "@/lib/supabaseClient";
 import { User } from "@/types";
 import { toast } from "sonner";
 
+// Helper function to check if input is an email or phone number
+export const isEmail = (input: string): boolean => {
+  return input.includes('@');
+};
+
 // Функция для форматирования телефонного номера в формат E.164
 export const formatPhoneNumber = (phone: string): string => {
   // Удаляем все нецифровые символы
@@ -18,34 +23,58 @@ export const formatPhoneNumber = (phone: string): string => {
   return phone;
 };
 
-// Функция для отправки OTP на телефон
-export const sendOTP = async (phone: string): Promise<void> => {
-  const formattedPhone = formatPhoneNumber(phone);
-  console.log("Sending OTP to:", formattedPhone);
-  
-  const { error } = await supabase.auth.signInWithOtp({
-    phone: formattedPhone,
-  });
+// Функция для отправки OTP на телефон или email
+export const sendOTP = async (contact: string): Promise<void> => {
+  if (isEmail(contact)) {
+    console.log("Sending OTP to email:", contact);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: contact,
+    });
+    
+    if (error) {
+      console.error("SignInWithOtp error:", error);
+      throw error;
+    }
+  } else {
+    const formattedPhone = formatPhoneNumber(contact);
+    console.log("Sending OTP to phone:", formattedPhone);
+    
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: formattedPhone,
+    });
 
-  if (error) {
-    console.error("SignInWithOtp error:", error);
-    throw error;
+    if (error) {
+      console.error("SignInWithOtp error:", error);
+      throw error;
+    }
   }
   
   return;
 };
 
 // Функция для проверки OTP кода
-export const verifyOTPCode = async (phone: string, otp: string): Promise<any> => {
-  const formattedPhone = formatPhoneNumber(phone);
-  console.log("Verifying OTP for phone:", formattedPhone);
-  
+export const verifyOTPCode = async (contact: string, otp: string): Promise<any> => {
   try {
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: formattedPhone,
-      token: otp,
-      type: 'sms'
-    });
+    let verifyOptions;
+    
+    if (isEmail(contact)) {
+      console.log("Verifying OTP for email:", contact);
+      verifyOptions = {
+        email: contact,
+        token: otp,
+        type: 'email' as const
+      };
+    } else {
+      const formattedPhone = formatPhoneNumber(contact);
+      console.log("Verifying OTP for phone:", formattedPhone);
+      verifyOptions = {
+        phone: formattedPhone,
+        token: otp,
+        type: 'sms' as const
+      };
+    }
+    
+    const { data, error } = await supabase.auth.verifyOtp(verifyOptions);
 
     if (error) {
       console.error("OTP verification error:", error);
@@ -67,7 +96,8 @@ export const verifyOTPCode = async (phone: string, otp: string): Promise<any> =>
 // Функция для создания или получения пользователя из базы данных
 export const getUserOrCreate = async (userId: string, userData: {
   name?: string;
-  phone: string;
+  phone?: string;
+  email?: string;
 }): Promise<User> => {
   console.log("Getting or creating user with ID:", userId);
   
@@ -90,7 +120,8 @@ export const getUserOrCreate = async (userId: string, userData: {
           {
             id: userId,
             name: userData.name || '',
-            phone: userData.phone,
+            phone: userData.phone || '',
+            email: userData.email || '',
             role: 'USER',
             created_at: new Date().toISOString()
           }

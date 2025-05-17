@@ -9,15 +9,16 @@ import {
   getUserOrCreate, 
   logoutUser,
   getCurrentUserSession,
-  formatPhoneNumber
+  formatPhoneNumber,
+  isEmail
 } from "@/services/authService";
 
 type AuthContextType = {
   currentUser: User | null;
-  login: (phone: string) => Promise<void>;
-  verifyOTP: (phone: string, otp: string) => Promise<User>;
+  login: (contact: string) => Promise<void>;
+  verifyOTP: (contact: string, otp: string) => Promise<User>;
   logout: () => Promise<void>;
-  register: (name: string, phone: string) => Promise<void>;
+  register: (name: string, contact: string) => Promise<void>;
   isLoading: boolean;
   userRole: "USER" | "PARTNER" | "ADMIN" | null;
 };
@@ -118,15 +119,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, []);
 
-  const login = async (phone: string): Promise<void> => {
+  const login = async (contact: string): Promise<void> => {
     setIsLoading(true);
     
     try {
-      console.log("Attempting login with phone:", phone);
-      await sendOTP(phone);
+      console.log("Attempting login with contact:", contact);
+      await sendOTP(contact);
       
-      toast.success("Код подтверждения отправлен на ваш телефон", {
-        description: "Пожалуйста, введите полученный код"
+      toast.success("Код подтверждения отправлен", {
+        description: isEmail(contact) 
+          ? "Пожалуйста, проверьте вашу почту" 
+          : "Пожалуйста, введите полученный SMS-код"
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -138,16 +141,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const verifyOTP = async (phone: string, otp: string): Promise<User> => {
+  const verifyOTP = async (contact: string, otp: string): Promise<User> => {
     setIsLoading(true);
-    console.log("Starting OTP verification for phone:", phone, "with code:", otp);
+    console.log("Starting OTP verification for:", contact, "with code:", otp);
     
     try {
-      const supabaseUser = await verifyOTPCode(phone, otp);
+      const supabaseUser = await verifyOTPCode(contact, otp);
       console.log("OTP verification successful, getting user data...");
       
       // Получаем или создаем пользователя в базе данных
-      const user = await getUserOrCreate(supabaseUser.id, { phone: formatPhoneNumber(phone) });
+      const userData = isEmail(contact) 
+        ? { email: contact }
+        : { phone: formatPhoneNumber(contact) };
+      
+      const user = await getUserOrCreate(supabaseUser.id, userData);
 
       setCurrentUser(user);
       setUserRole(user.role);
@@ -180,20 +187,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const register = async (name: string, phone: string): Promise<void> => {
+  const register = async (name: string, contact: string): Promise<void> => {
     setIsLoading(true);
     
     try {
-      console.log("Starting registration for:", name, phone);
+      console.log("Starting registration for:", name, contact);
       
       // Для регистрации сначала отправляем OTP
-      await sendOTP(phone);
+      await sendOTP(contact);
       
       // Сохраняем имя временно (будет сохранено после проверки OTP)
       localStorage.setItem('pendingRegistrationName', name);
       
-      toast.success("Код подтверждения отправлен на ваш телефон", {
-        description: "Пожалуйста, введите полученный код для завершения регистрации"
+      toast.success("Код подтверждения отправлен", {
+        description: isEmail(contact) 
+          ? "Пожалуйста, проверьте вашу почту" 
+          : "Пожалуйста, введите полученный SMS-код для завершения регистрации"
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка регистрации';

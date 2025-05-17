@@ -6,45 +6,66 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Header } from "@/components/Header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ChevronLeft, Loader2, AlertCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChevronLeft, Loader2, AlertCircle, Mail, Phone } from "lucide-react";
 
 const RegisterPage = () => {
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [contact, setContact] = useState("");
+  const [activeTab, setActiveTab] = useState<"phone" | "email">("phone");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   
   const navigate = useNavigate();
   const { register } = useAuth();
-
-  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  
+  const validateInput = (): boolean => {
     setError("");
     
+    if (!name.trim()) {
+      setError("Пожалуйста, введите имя");
+      return false;
+    }
+    
+    if (!contact.trim()) {
+      setError(activeTab === "phone" ? 
+        "Пожалуйста, введите номер телефона" : 
+        "Пожалуйста, введите email");
+      return false;
+    }
+    
+    if (activeTab === "phone") {
+      // Проверяем, что номер содержит только цифры (после удаления спец. символов)
+      const digits = contact.replace(/\D/g, '');
+      if (digits.length !== 11) {
+        setError("Номер телефона должен содержать 11 цифр");
+        return false;
+      }
+    } else {
+      // Проверка формата email
+      if (!contact.includes('@')) {
+        setError("Неверный формат email, должен содержать @");
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!validateInput()) return;
+    
+    setIsSubmitting(true);
+    
     try {
-      if (!name.trim()) {
-        throw new Error("Пожалуйста, введите ваше имя");
-      }
+      await register(name, contact);
       
-      if (!phone.trim()) {
-        throw new Error("Пожалуйста, введите номер телефона");
-      }
-      
-      console.log("Starting registration with:", { name, phone });
-      await register(name, phone);
-      
-      // Navigate to verify code page with necessary state
-      navigate("/verify-code", { 
-        state: { 
-          phone, 
-          name, 
-          isRegistration: true 
-        } 
-      });
+      // Navigate to verify code page with contact info
+      navigate("/verify-code", { state: { contact, name, isRegistration: true } });
     } catch (error: any) {
       console.error("Registration error:", error);
       setError(error.message || "Ошибка регистрации");
@@ -52,6 +73,12 @@ const RegisterPage = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as "phone" | "email");
+    setContact("");
+    setError("");
   };
   
   return (
@@ -72,70 +99,93 @@ const RegisterPage = () => {
           <div className="text-center">
             <h1 className="text-2xl font-bold">Создайте аккаунт</h1>
             <p className="mt-2 text-muted-foreground">
-              Введите данные для регистрации
+              Выберите способ регистрации
             </p>
           </div>
           
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          <form className="space-y-6" onSubmit={handleRegister}>
-            <div className="space-y-2">
-              <Label htmlFor="name">Имя</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Введите ваше имя"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setError("");
-                }}
-                required
-                className="rounded-xl text-base py-6"
-              />
-            </div>
+          <Tabs 
+            defaultValue="phone" 
+            value={activeTab}
+            onValueChange={handleTabChange}
+            className="w-full"
+          >
+            <TabsList className="grid grid-cols-2 w-full mb-4">
+              <TabsTrigger value="phone" className="flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                <span>Телефон</span>
+              </TabsTrigger>
+              <TabsTrigger value="email" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                <span>Email</span>
+              </TabsTrigger>
+            </TabsList>
             
-            <div className="space-y-2">
-              <Label htmlFor="phone">Номер телефона</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+7 (___) ___-__-__"
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value);
-                  setError("");
-                }}
-                required
-                className="rounded-xl text-base py-6"
-              />
-            </div>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             
-            <Button
-              type="submit"
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-6"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Отправка...
-                </>
-              ) : "Зарегистрироваться"}
-            </Button>
-            
-            <div className="text-center text-sm">
-              Уже есть аккаунт?{" "}
-              <Link to="/login" className="text-blue-500 hover:underline">
-                Войти
-              </Link>
-            </div>
-          </form>
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div className="space-y-2">
+                <Label htmlFor="name">Имя</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Ваше имя"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setError("");
+                  }}
+                  required
+                  className="rounded-xl text-base py-6"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="contact">
+                  {activeTab === "phone" ? "Номер телефона" : "Email"}
+                </Label>
+                <Input
+                  id="contact"
+                  type={activeTab === "phone" ? "tel" : "email"}
+                  placeholder={activeTab === "phone" 
+                    ? "+7 (___) ___-__-__" 
+                    : "email@example.com"
+                  }
+                  value={contact}
+                  onChange={(e) => {
+                    setContact(e.target.value);
+                    setError("");
+                  }}
+                  required
+                  className="rounded-xl text-base py-6"
+                />
+              </div>
+              
+              <Button
+                type="submit"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-6"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Регистрация...
+                  </>
+                ) : "Зарегистрироваться"}
+              </Button>
+              
+              <div className="text-center text-sm">
+                Уже есть аккаунт?{" "}
+                <Link to="/login" className="text-blue-500 hover:underline">
+                  Войти
+                </Link>
+              </div>
+            </form>
+          </Tabs>
         </div>
       </div>
     </div>

@@ -9,14 +9,16 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Header } from "@/components/Header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChevronLeft, Loader2, AlertCircle } from "lucide-react";
+import { isEmail } from "@/services/authService";
 
 const VerifyCodePage = () => {
   const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [phone, setPhone] = useState("");
+  const [contact, setContact] = useState("");
   const [name, setName] = useState("");
   const [isRegistration, setIsRegistration] = useState(false);
   const [error, setError] = useState("");
+  const [contactType, setContactType] = useState<"phone" | "email">("phone");
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,17 +28,19 @@ const VerifyCodePage = () => {
     // Clear any previous errors
     setError("");
     
-    const state = location.state as { phone?: string; name?: string; isRegistration?: boolean } | null;
+    const state = location.state as { contact?: string; name?: string; isRegistration?: boolean } | null;
     console.log("Verify page state:", state);
 
-    if (state?.phone) {
-      setPhone(state.phone);
+    if (state?.contact) {
+      setContact(state.contact);
+      setContactType(isEmail(state.contact) ? "email" : "phone");
+      
       if (state.name) {
         setName(state.name);
         setIsRegistration(true);
       }
     } else {
-      toast.error("Номер телефона не указан");
+      toast.error("Контактные данные не указаны");
       navigate("/login");
     }
   }, [location, navigate]);
@@ -52,8 +56,8 @@ const VerifyCodePage = () => {
     setError("");
 
     try {
-      console.log("Verifying OTP for phone:", phone, "with code:", otp);
-      const user = await verifyOTP(phone, otp);
+      console.log("Verifying OTP for contact:", contact, "with code:", otp);
+      const user = await verifyOTP(contact, otp);
       console.log("Verification successful, user:", user);
       
       toast.success(isRegistration
@@ -84,9 +88,9 @@ const VerifyCodePage = () => {
 
     try {
       if (isRegistration) {
-        await register(name, phone);
+        await register(name, contact);
       } else {
-        await login(phone);
+        await login(contact);
       }
       toast.success("Новый код отправлен");
     } catch (error: any) {
@@ -119,9 +123,11 @@ const VerifyCodePage = () => {
       <div className="flex-1 flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold">Подтверждение номера</h1>
+            <h1 className="text-2xl font-bold">Подтверждение</h1>
             <p className="mt-2 text-muted-foreground">
-              Введите код из SMS для подтверждения
+              {contactType === "phone" 
+                ? "Введите код из SMS для подтверждения" 
+                : "Введите код из письма для подтверждения"}
             </p>
           </div>
 
@@ -134,7 +140,11 @@ const VerifyCodePage = () => {
 
           <form className="space-y-6" onSubmit={handleVerifyOtp}>
             <div className="space-y-4">
-              <Label htmlFor="otp">Введите код из SMS</Label>
+              <Label htmlFor="otp">
+                {contactType === "phone" 
+                  ? "Введите код из SMS" 
+                  : "Введите код из письма"}
+              </Label>
               <div className="flex justify-center">
                 <InputOTP
                   maxLength={6}
@@ -158,7 +168,8 @@ const VerifyCodePage = () => {
                 />
               </div>
               <p className="text-center text-sm text-muted-foreground mt-2">
-                Код отправлен на номер {phone}
+                Код отправлен на {contactType === "phone" ? "номер" : ""}
+                {" "}{contact}
               </p>
             </div>
 
@@ -182,7 +193,7 @@ const VerifyCodePage = () => {
                 onClick={() => navigate(isRegistration ? "/register" : "/login")}
                 className="text-blue-500 p-0"
               >
-                {isRegistration ? "Изменить данные" : "Изменить номер телефона"}
+                {isRegistration ? "Изменить данные" : "Изменить контактные данные"}
               </Button>
             </div>
 
