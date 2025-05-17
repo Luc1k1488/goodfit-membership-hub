@@ -33,7 +33,6 @@ const queryClient = new QueryClient({
   },
 });
 
-};
 
 const AppRoutes = () => {
   return (
