@@ -17,6 +17,9 @@ export const ProtectedRoute = ({
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
         <p className="text-lg">Инициализация авторизации...</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          (Если загрузка длится долго, попробуйте обновить страницу)
+        </p>
       </div>
     );
   }

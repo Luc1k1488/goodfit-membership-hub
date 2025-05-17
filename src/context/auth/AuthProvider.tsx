@@ -1,3 +1,4 @@
+
 import { useState, useEffect, ReactNode } from "react";
 import { User } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
@@ -78,13 +79,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             if (session.user.email) userData.email = session.user.email;
             if (session.user.phone) userData.phone = session.user.phone;
             
-            const user = await getUserOrCreate(session.user.id, userData);
-            setCurrentUser(user);
-            setUserRole(user.role);
-            console.log("User data updated after auth change:", user);
+            const { user } = await getCurrentUserSession();
+            if (user) {
+              setCurrentUser(user);
+              setUserRole(user.role);
+              console.log("User data updated after auth change:", user);
+            } else {
+              console.warn("No user data returned from session");
+              setCurrentUser(null);
+              setUserRole(null);
+            }
           } catch (error) {
             console.error("Error during auth state change:", error);
-            // Don't reset user here if there's an error, only if explicitly signed out
+            setCurrentUser(null);
+            setUserRole(null);
           } finally {
             setIsLoading(false);
           }

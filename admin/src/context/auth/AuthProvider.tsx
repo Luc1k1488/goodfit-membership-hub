@@ -95,12 +95,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           // No session even though we got a SIGNED_IN event
           console.warn("Received SIGNED_IN event but no session was provided");
           setIsLoading(false);
+          setAuthInitialized(true);
         }
       } else if (event === 'SIGNED_OUT') {
         console.log("User signed out");
         setCurrentUser(null);
         setUserRole(null);
         setIsLoading(false);
+        // Keep authInitialized true after sign out
       }
     });
 

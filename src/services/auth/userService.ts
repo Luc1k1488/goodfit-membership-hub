@@ -245,10 +245,33 @@ export const getCurrentUserSession = async (): Promise<{
         .eq('id', session.user.id)
         .single();
 
-      if (userError || !userData) {
-        console.log("User not found in database, attempting to create user entry");
+      if (userError) {
+        console.log("Error fetching user data:", userError.message);
         
         // User authenticated but not in users table - create entry with available data
+        const authUser = session.user;
+        const newUserData: Record<string, string> = {};
+        
+        if (authUser.email) {
+          newUserData.email = authUser.email;
+        }
+        
+        if (authUser.phone) {
+          newUserData.phone = authUser.phone;
+        }
+        
+        try {
+          const user = await getUserOrCreate(authUser.id, newUserData);
+          return { session, user };
+        } catch (createError) {
+          console.error("Failed to create missing user:", createError);
+          return { session, user: null };
+        }
+      }
+
+      if (!userData) {
+        console.log("No user data found for ID:", session.user.id);
+        // Try to create user
         const authUser = session.user;
         const newUserData: Record<string, string> = {};
         
