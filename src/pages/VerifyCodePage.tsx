@@ -20,10 +20,14 @@ const VerifyCodePage = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyOTP, login, register, userRole } = useAuth();
+  const { verifyOTP, login, register } = useAuth();
 
   useEffect(() => {
+    // Clear any previous errors
+    setError("");
+    
     const state = location.state as { phone?: string; name?: string; isRegistration?: boolean } | null;
+    console.log("Verify page state:", state);
 
     if (state?.phone) {
       setPhone(state.phone);
@@ -39,38 +43,32 @@ const VerifyCodePage = () => {
 
   const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!otp || otp.length < 6) {
+      setError("Пожалуйста, введите полный код подтверждения");
+      return;
+    }
+    
     setIsSubmitting(true);
     setError("");
 
     try {
-      if (!phone || otp.length < 6) {
-        throw new Error("Пожалуйста, введите полный код подтверждения");
-      }
-
-      console.log("Sending verification request for phone:", phone, "with OTP:", otp);
+      console.log("Verifying OTP for phone:", phone, "with code:", otp);
       const user = await verifyOTP(phone, otp);
-
-      if (!user || !user.role) {
-        throw new Error("Не удалось получить данные пользователя");
-      }
-
-      console.log("User verified successfully:", user);
+      console.log("Verification successful, user:", user);
+      
       toast.success(isRegistration
         ? "Регистрация успешно завершена!"
         : `Добро пожаловать${user.name ? `, ${user.name}` : ""}!`
       );
 
-      // Короткая задержка перед перенаправлением
-      setTimeout(() => {
-        if (user.role === "ADMIN") {
-          navigate("/admin-dashboard");
-        } else if (user.role === "PARTNER") {
-          navigate("/partner-dashboard");
-        } else {
-          navigate("/profile");
-        }
-      }, 500);
-
+      // Redirect based on user role
+      if (user.role === "ADMIN") {
+        navigate("/admin-dashboard");
+      } else if (user.role === "PARTNER") {
+        navigate("/partner-dashboard");
+      } else {
+        navigate("/profile");
+      }
     } catch (error: any) {
       console.error("OTP verification error:", error);
       setError(error.message || "Ошибка проверки кода");
@@ -144,7 +142,7 @@ const VerifyCodePage = () => {
                   onChange={(value) => {
                     setOtp(value);
                     setError("");
-                    console.log("OTP entered:", value); // Для отладки
+                    console.log("OTP entered:", value);
                   }}
                   render={({ slots }) => (
                     <InputOTPGroup>

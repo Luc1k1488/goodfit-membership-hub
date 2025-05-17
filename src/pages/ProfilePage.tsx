@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,38 +16,49 @@ import { Header } from "@/components/Header";
 import { toast } from "sonner";
 
 const ProfilePage = () => {
-  const { user, bookings, getClassById, getGymById } = useApp();
+  const { bookings, getClassById, getGymById } = useApp();
   const { currentUser, isLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("bookings");
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Используем currentUser вместо user для проверки аутентификации
-    console.log("ProfilePage: checking auth state:", { currentUser, isLoading });
-    if (!isLoading && !currentUser) {
-      toast.error("Необходимо войти в систему");
-      navigate("/login");
-    }
+    const checkAuth = async () => {
+      console.log("ProfilePage: checking auth state:", { currentUser, isLoading });
+      
+      // Wait a bit to make sure authentication state is loaded
+      if (!isLoading && !currentUser) {
+        console.log("User not authenticated, redirecting to login");
+        toast.error("Необходимо войти в систему");
+        navigate("/login");
+      }
+    };
+    
+    checkAuth();
   }, [currentUser, isLoading, navigate]);
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Ошибка при выходе из системы");
+    }
+  };
   
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-2">Загрузка...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-lg">Загрузка профиля...</p>
       </div>
     );
   }
   
-  // Проверка наличия пользователя, если загрузка завершена
-  if (!currentUser && !isLoading) {
-    toast.error("Пользователь не найден");
-    navigate("/login");
+  // If not loading and no user, we should be redirected by the useEffect
+  if (!currentUser) {
     return null;
   }
-  
-  // Отображаем страницу профиля только если пользователь авторизован
-  const displayUser = currentUser || user; // Используем currentUser, если доступен, иначе fallback на user из AppContext
   
   // Filter bookings by status
   const activeBookings = bookings.filter(booking => booking.status === 'BOOKED');
@@ -62,16 +74,6 @@ const ProfilePage = () => {
     })
     .filter(Boolean) as FitnessClass[];
   
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast.error("Ошибка при выходе из системы");
-    }
-  };
-  
   return (
     <>
       <Header>
@@ -82,10 +84,10 @@ const ProfilePage = () => {
         <Card>
           <CardHeader className="flex flex-row items-center gap-4 pb-2">
             <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden">
-              {displayUser && displayUser.profileImage ? (
+              {currentUser && currentUser.profileImage ? (
                 <img 
-                  src={displayUser.profileImage} 
-                  alt={displayUser.name || "Пользователь"} 
+                  src={currentUser.profileImage} 
+                  alt={currentUser.name || "Пользователь"} 
                   className="object-cover w-full h-full"
                 />
               ) : (
@@ -93,30 +95,30 @@ const ProfilePage = () => {
               )}
             </div>
             <div>
-              <CardTitle>{displayUser ? (displayUser.name || 'Пользователь') : 'Загрузка...'}</CardTitle>
-              <p className="text-sm text-muted-foreground">{displayUser ? displayUser.phone : ''}</p>
-              {displayUser && displayUser.role !== 'USER' && (
-                <Badge className="mt-1 bg-blue-500">{displayUser.role === 'ADMIN' ? 'Администратор' : 'Партнёр'}</Badge>
+              <CardTitle>{currentUser ? (currentUser.name || 'Пользователь') : 'Загрузка...'}</CardTitle>
+              <p className="text-sm text-muted-foreground">{currentUser ? currentUser.phone : ''}</p>
+              {currentUser && currentUser.role !== 'USER' && (
+                <Badge className="mt-1 bg-blue-500">{currentUser.role === 'ADMIN' ? 'Администратор' : 'Партнёр'}</Badge>
               )}
             </div>
           </CardHeader>
           <CardContent className="pt-2 pb-4">
             <div className="flex gap-4 mt-2">
-              {displayUser && (
+              {currentUser && (
                 <Button 
                   variant="outline" 
                   className="flex-1"
                   onClick={() => {
-                    if (displayUser.role === 'ADMIN') {
+                    if (currentUser.role === 'ADMIN') {
                       navigate('/admin-dashboard');
-                    } else if (displayUser.role === 'PARTNER') {
+                    } else if (currentUser.role === 'PARTNER') {
                       navigate('/partner-dashboard');
                     }
                   }}
                 >
-                  {displayUser.role === 'ADMIN' 
+                  {currentUser.role === 'ADMIN' 
                     ? 'Админ панель' 
-                    : displayUser.role === 'PARTNER' 
+                    : currentUser.role === 'PARTNER' 
                       ? 'Панель партнёра'
                       : 'Настройки'}
                 </Button>
@@ -132,7 +134,7 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
         
-        {user.subscriptionId ? (
+        {currentUser.subscriptionId ? (
           <Card className="mt-4">
             <CardHeader>
               <div className="flex justify-between items-center">

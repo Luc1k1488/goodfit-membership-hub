@@ -40,22 +40,28 @@ export const verifyOTPCode = async (phone: string, otp: string): Promise<any> =>
   const formattedPhone = formatPhoneNumber(phone);
   console.log("Verifying OTP for phone:", formattedPhone);
   
-  const { data, error } = await supabase.auth.verifyOtp({
-    phone: formattedPhone,
-    token: otp,
-    type: 'sms'
-  });
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone: formattedPhone,
+      token: otp,
+      type: 'sms'
+    });
 
-  if (error) {
-    console.error("OTP verification error:", error);
+    if (error) {
+      console.error("OTP verification error:", error);
+      throw error;
+    }
+
+    if (!data.user) {
+      throw new Error('Пользователь не найден');
+    }
+
+    console.log("OTP verification successful:", data.user);
+    return data.user;
+  } catch (error) {
+    console.error("Verification error:", error);
     throw error;
   }
-
-  if (!data.user) {
-    throw new Error('Пользователь не найден');
-  }
-
-  return data.user;
 };
 
 // Функция для создания или получения пользователя из базы данных
@@ -63,65 +69,72 @@ export const getUserOrCreate = async (userId: string, userData: {
   name?: string;
   phone: string;
 }): Promise<User> => {
-  // Проверяем, существует ли пользователь в базе данных
-  const { data: existingUser, error: userError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  // Если пользователь не существует, создаем новую запись
-  if (userError) {
-    console.log("User not found in database, creating new user...");
-    
-    // Создаем нового пользователя с ролью USER по умолчанию
-    const { data: newUser, error: createError } = await supabase
+  console.log("Getting or creating user with ID:", userId);
+  
+  try {
+    // Проверяем, существует ли пользователь в базе данных
+    const { data: existingUser, error: userError } = await supabase
       .from('users')
-      .insert([
-        {
-          id: userId,
-          name: userData.name || '',
-          phone: userData.phone,
-          role: 'USER',
-          created_at: new Date().toISOString()
-        }
-      ])
-      .select()
+      .select('*')
+      .eq('id', userId)
       .single();
 
-    if (createError) {
-      console.error("Error creating new user:", createError);
-      throw createError;
+    // Если пользователь не существует, создаем новую запись
+    if (userError) {
+      console.log("User not found in database, creating new user...");
+      
+      // Создаем нового пользователя с ролью USER по умолчанию
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: userId,
+            name: userData.name || '',
+            phone: userData.phone,
+            role: 'USER',
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+
+      if (createError) {
+        console.error("Error creating new user:", createError);
+        throw createError;
+      }
+
+      console.log("New user created successfully:", newUser);
+
+      const user: User = {
+        id: newUser.id,
+        name: newUser.name || '',
+        email: newUser.email || '',
+        phone: newUser.phone || '',
+        role: newUser.role as "USER" | "PARTNER" | "ADMIN",
+        createdAt: newUser.created_at,
+        profileImage: newUser.profile_image || '/placeholder.svg'
+      };
+
+      return user;
     }
 
-    console.log("New user created successfully:", newUser);
+    console.log("User found in database:", existingUser);
 
     const user: User = {
-      id: newUser.id,
-      name: newUser.name || '',
-      email: newUser.email || '',
-      phone: newUser.phone || '',
-      role: newUser.role as "USER" | "PARTNER" | "ADMIN",
-      createdAt: newUser.created_at,
-      profileImage: newUser.profile_image || '/placeholder.svg'
+      id: existingUser.id,
+      name: existingUser.name || '',
+      email: existingUser.email || '',
+      phone: existingUser.phone || '',
+      role: existingUser.role as "USER" | "PARTNER" | "ADMIN",
+      createdAt: existingUser.created_at,
+      profileImage: existingUser.profile_image || '/placeholder.svg'
     };
 
     return user;
+  } catch (error) {
+    console.error("Error in getUserOrCreate:", error);
+    throw error;
   }
-
-  console.log("User found in database:", existingUser);
-
-  const user: User = {
-    id: existingUser.id,
-    name: existingUser.name || '',
-    email: existingUser.email || '',
-    phone: existingUser.phone || '',
-    role: existingUser.role as "USER" | "PARTNER" | "ADMIN",
-    createdAt: existingUser.created_at,
-    profileImage: existingUser.profile_image || '/placeholder.svg'
-  };
-
-  return user;
 };
 
 // Функция для выхода из системы
@@ -141,6 +154,7 @@ export const getCurrentUserSession = async (): Promise<{
   user: User | null;
 }> => {
   try {
+    console.log("Checking current user session...");
     // Получаем текущую сессию пользователя из Supabase
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -150,8 +164,11 @@ export const getCurrentUserSession = async (): Promise<{
     }
     
     if (!session) {
+      console.log("No active session found");
       return { session: null, user: null };
     }
+    
+    console.log("Active session found:", session.user.id);
     
     // Получаем данные пользователя из базы данных
     const { data: userData, error: userError } = await supabase
@@ -177,9 +194,11 @@ export const getCurrentUserSession = async (): Promise<{
         profileImage: userData.profile_image || '/placeholder.svg'
       };
 
+      console.log("User data retrieved:", user);
       return { session, user };
     }
     
+    console.log("User data not found in the database");
     return { session, user: null };
   } catch (error) {
     console.error("Error in getCurrentUserSession:", error);

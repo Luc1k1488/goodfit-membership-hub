@@ -30,7 +30,10 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
   const { currentUser, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen">Загрузка...</div>;
+    return <div className="flex items-center justify-center h-screen">
+      <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+      <p className="text-lg ml-2">Загрузка...</p>
+    </div>;
   }
 
   if (!currentUser) {
@@ -91,6 +94,9 @@ const AppRoutes = () => {
   );
 };
 
+// Must import at the top
+import { Loader2 } from "lucide-react";
+
 const App = () => {
   // Register PWA installation effect
   useEffect(() => {
@@ -98,8 +104,6 @@ const App = () => {
       window.addEventListener('beforeinstallprompt', (e) => {
         // Prevent Chrome 67 and earlier from automatically showing the prompt
         e.preventDefault();
-        // Stash the event so it can be triggered later
-        // deferredPrompt = e;
         console.log('App can be installed, showing prompt');
       });
     };
