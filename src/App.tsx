@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Toaster as Sonner } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -32,62 +33,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Improved ProtectedRoute component with better loading behavior and debugging
-const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole?: "USER" | "PARTNER" | "ADMIN" }) => {
-  const { currentUser, isLoading, authInitialized, userRole } = useAuth();
-  
-  // Add explicit debugging logs
-  console.log("ProtectedRoute check:", { 
-    authInitialized, 
-    isLoading, 
-    hasUser: !!currentUser, 
-    userRole, 
-    requiredRole 
-  });
-  
-  // If auth is not initialized yet, show loader
-  if (!authInitialized) {
-    console.log("ProtectedRoute: Auth not initialized, showing loader");
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Инициализация авторизации...</p>
-      </div>
-    );
-  }
-  
-  // If auth is initialized but still loading user data, show a loader
-  if (isLoading) {
-    console.log("ProtectedRoute: Auth initialized but loading, showing loader");
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Загрузка данных пользователя...</p>
-      </div>
-    );
-  }
-
-  // Important: Only redirect if auth is fully initialized AND there's no user
-  if (authInitialized && !currentUser) {
-    console.log("ProtectedRoute: Auth initialized, no user found, redirecting to login");
-    return <Navigate to="/login" replace />;
-  }
-
-  // Check role requirements if auth is initialized and user exists
-  if (requiredRole && currentUser && currentUser.role !== requiredRole) {
-    console.log("ProtectedRoute: Wrong role, redirecting to appropriate dashboard");
-    
-    if (currentUser.role === "ADMIN") {
-      return <Navigate to="/admin-dashboard" replace />;
-    } else if (currentUser.role === "PARTNER") {
-      return <Navigate to="/partner-dashboard" replace />;
-    } else {
-      return <Navigate to="/profile" replace />;
-    }
-  }
-
-  console.log("ProtectedRoute: All checks passed, rendering protected content");
-  return children;
 };
 
 const AppRoutes = () => {
