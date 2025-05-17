@@ -46,7 +46,13 @@ const VerifyCodePage = () => {
     setError("");
     
     try {
+      if (!phone || otp.length < 6) {
+        throw new Error("Пожалуйста, введите полный код подтверждения");
+      }
+      
+      console.log("Attempting to verify OTP:", { phone, otp, isRegistration });
       const user = await verifyOTP(phone, otp);
+      console.log("Verification successful, user:", user);
       
       toast.success(isRegistration 
         ? "Регистрация успешно завершена!" 
@@ -63,8 +69,9 @@ const VerifyCodePage = () => {
       }
       
     } catch (error: any) {
-      setError(error.message || "Ошибка проверки кода");
       console.error("OTP verification error:", error);
+      setError(error.message || "Ошибка проверки кода");
+      toast.error(error.message || "Ошибка проверки кода");
     } finally {
       setIsSubmitting(false);
     }
@@ -82,8 +89,9 @@ const VerifyCodePage = () => {
       }
       toast.success("Новый код отправлен");
     } catch (error: any) {
-      setError(error.message || "Ошибка отправки кода");
       console.error("Error resending code:", error);
+      setError(error.message || "Ошибка отправки кода");
+      toast.error(error.message || "Ошибка отправки кода");
     } finally {
       setIsSubmitting(false);
     }

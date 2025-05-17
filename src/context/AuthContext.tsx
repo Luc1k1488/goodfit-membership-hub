@@ -146,12 +146,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       // Format phone number to ensure E.164 format
       const formattedPhone = formatPhoneNumber(phone);
+      console.log("Attempting login with phone:", formattedPhone);
       
       const { error } = await supabase.auth.signInWithOtp({
         phone: formattedPhone,
       });
 
       if (error) {
+        console.error("SignInWithOtp error:", error);
         throw error;
       }
       
@@ -159,6 +161,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         description: "Пожалуйста, введите полученный код"
       });
     } catch (error) {
+      console.error("Login error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Не удалось войти';
       toast.error(errorMessage);
       throw error;
@@ -169,10 +172,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const verifyOTP = async (phone: string, otp: string): Promise<User> => {
     setIsLoading(true);
+    console.log("Starting OTP verification for phone:", phone);
     
     try {
       const formattedPhone = formatPhoneNumber(phone);
       
+      console.log("Verifying OTP with Supabase...");
       const { data, error } = await supabase.auth.verifyOtp({
         phone: formattedPhone,
         token: otp,
@@ -180,13 +185,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
 
       if (error) {
+        console.error("OTP verification error:", error);
         throw error;
       }
 
       if (!data.user) {
+        console.error("No user returned from verification");
         throw new Error('Пользователь не найден');
       }
 
+      console.log("OTP verification successful, checking user in database...");
+      
       // Check if user exists in our users table
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -196,6 +205,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // If user doesn't exist in our table, create a new record
       if (userError) {
+        console.log("User not found in database, creating new user...");
+        
         // Get pending name from localStorage if exists
         const pendingName = localStorage.getItem('pendingRegistrationName') || '';
         localStorage.removeItem('pendingRegistrationName'); // Clear it after using
@@ -216,8 +227,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           .single();
 
         if (createError) {
+          console.error("Error creating new user:", createError);
           throw createError;
         }
+
+        console.log("New user created successfully:", newUser);
 
         const user: User = {
           id: newUser.id,
@@ -233,6 +247,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUserRole(user.role);
         return user;
       }
+
+      console.log("User found in database:", userData);
 
       const user: User = {
         id: userData.id,
@@ -250,6 +266,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.success(`Добро пожаловать${user.name ? ', ' + user.name : ''}!`);
       return user;
     } catch (error) {
+      console.error("Error during verification process:", error);
       const errorMessage = error instanceof Error ? error.message : 'Неверный код';
       toast.error(errorMessage);
       throw error;
