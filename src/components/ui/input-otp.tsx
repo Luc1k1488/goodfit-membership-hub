@@ -1,6 +1,6 @@
 
 import * as React from "react"
-import { OTPInput, OTPInputContext } from "input-otp"
+import { OTPInput, OTPInputContext, SlotProps } from "input-otp"
 import { Dot } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -29,14 +29,13 @@ const InputOTPGroup = React.forwardRef<
 ))
 InputOTPGroup.displayName = "InputOTPGroup"
 
-// Fixed typescript error by explicitly adding index parameter
 const InputOTPSlot = React.forwardRef<
   React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div"> & { index?: number }
+  React.ComponentPropsWithoutRef<"div"> & { index: number }
 >(({ index, className, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext)
-  const slot = inputOTPContext.slots[index || 0] || {}
-  const { char, hasFakeCaret, isActive } = slot
+  const slot = inputOTPContext?.slots?.[index] as SlotProps | undefined || {}
+  const { char, hasFakeCaret, isActive } = slot as SlotProps
 
   return (
     <div
