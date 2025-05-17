@@ -15,15 +15,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [userRole, setUserRole] = useState<"USER" | "PARTNER" | "ADMIN" | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
 
-  // Создаем таймер для автоматической установки authInitialized в true
-  // если по какой-то причине это не произошло
+  // Create a timer for automatically setting authInitialized to true
+  // if it hasn't been set for some reason
   useEffect(() => {
+    console.log("Setting up auth initialization safety timer");
     const timer = setTimeout(() => {
       if (!authInitialized) {
         console.log("Forced authInitialized → true (timeout)");
         setAuthInitialized(true);
       }
-    }, 5000); // Через 5 секунд
+    }, 5000); // After 5 seconds
     
     return () => clearTimeout(timer);
   }, [authInitialized]);
@@ -206,6 +207,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     authInitialized,
     userRole
   };
+
+  useEffect(() => {
+    console.log("Admin Auth state updated:", {
+      isLoading,
+      authInitialized,
+      userExists: !!currentUser,
+      role: userRole,
+      userId: currentUser?.id
+    });
+  }, [isLoading, authInitialized, currentUser, userRole]);
 
   return (
     <AuthContext.Provider value={value}>

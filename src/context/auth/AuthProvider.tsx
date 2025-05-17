@@ -1,4 +1,3 @@
-
 import { useState, useEffect, ReactNode } from "react";
 import { User } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
@@ -24,15 +23,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [userRole, setUserRole] = useState<"USER" | "PARTNER" | "ADMIN" | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
   
-  // Создаем таймер для автоматической установки authInitialized в true
-  // если по какой-то причине это не произошло
+  // Create a timer for automatically setting authInitialized to true
+  // if it hasn't been set for some reason
   useEffect(() => {
+    console.log("Setting up auth initialization safety timer");
     const timer = setTimeout(() => {
       if (!authInitialized) {
         console.log("Forced authInitialized → true (timeout)");
         setAuthInitialized(true);
       }
-    }, 5000); // Через 5 секунд
+    }, 5000); // After 5 seconds
     
     return () => clearTimeout(timer);
   }, [authInitialized]);
@@ -96,10 +96,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (session) {
           setIsLoading(true);
           try {
-            const userData: Record<string, string> = {};
-            if (session.user.email) userData.email = session.user.email;
-            if (session.user.phone) userData.phone = session.user.phone;
-            
             const { user } = await getCurrentUserSession();
             if (user) {
               setCurrentUser(user);
@@ -136,6 +132,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         authListener.subscription.unsubscribe();
       }
       clearInterval(sessionCheckInterval);
+      // Clear all timeouts
     };
   }, []);
 

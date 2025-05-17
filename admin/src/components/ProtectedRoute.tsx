@@ -1,5 +1,5 @@
 
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/auth";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,17 @@ export const ProtectedRoute = ({
   requiredRole?: "PARTNER" | "ADMIN";
 }) => {
   const { currentUser, isLoading, authInitialized, userRole } = useAuth();
+  const location = useLocation();
+  
+  console.log("Admin ProtectedRoute state:", {
+    authInitialized,
+    isLoading,
+    userExists: !!currentUser,
+    userRole,
+    currentPath: location.pathname
+  });
 
-  // Если прошло больше 3 секунд и authInitialized все еще false, 
-  // считаем что произошла какая-то ошибка и перенаправляем на логин
+  // If auth isn't initialized yet, show loading
   if (!authInitialized) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -23,7 +31,18 @@ export const ProtectedRoute = ({
         <p className="text-sm text-muted-foreground mt-2">
           (Если загрузка длится долго, попробуйте обновить страницу)
         </p>
-        <Button variant="default" className="mt-4" onClick={() => window.location.href = '/login'}>
+        <Button 
+          variant="default" 
+          className="mt-4" 
+          onClick={() => window.location.reload()}
+        >
+          Обновить страницу
+        </Button>
+        <Button 
+          variant="outline" 
+          className="mt-2" 
+          onClick={() => window.location.href = '/login'}
+        >
           Перейти к входу
         </Button>
       </div>
@@ -41,6 +60,7 @@ export const ProtectedRoute = ({
 
   // If not logged in, redirect to login
   if (!currentUser) {
+    console.log("Admin route: No current user, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
@@ -61,6 +81,8 @@ export const ProtectedRoute = ({
 
   // If specific role is required
   if (requiredRole && userRole !== requiredRole) {
+    console.log(`Admin route: User role ${userRole} doesn't match required role ${requiredRole}`);
+    
     // Redirect different admin levels to their appropriate dashboards
     if (userRole === "ADMIN") {
       return <Navigate to="/dashboard" replace />;
