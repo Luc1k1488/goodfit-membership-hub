@@ -48,6 +48,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const fetchCurrentUser = async () => {
     console.log("Fetching current user...");
     
+    setIsLoading(true); // Ensure loading is true at start
+    
     try {
       const { session, user } = await getCurrentUserSession();
       
@@ -65,12 +67,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setCurrentUser(null);
       setUserRole(null);
     } finally {
-      // Ensure loading state is set to false only AFTER a delay
-      setTimeout(() => {
-        setIsLoading(false);
-        setAuthInitialized(true);
-        console.log("Auth initialized, loading complete");
-      }, 1000);
+      // Always set these flags in finally block to ensure they're updated
+      setIsLoading(false);
+      setAuthInitialized(true); // CRITICAL: Always set this to true when done
+      console.log("Auth initialized, loading complete");
     }
   };
 
@@ -110,12 +110,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setCurrentUser(null);
             setUserRole(null);
           } finally {
-            // Add delay to ensure state updates are processed
-            setTimeout(() => {
-              setIsLoading(false);
-              setAuthInitialized(true);
-              console.log("Auth state change processed, loading complete");
-            }, 1000);
+            // Always set these flags
+            setIsLoading(false);
+            setAuthInitialized(true);
+            console.log("Auth state change processed, loading complete");
           }
         }
       } else if (event === 'SIGNED_OUT') {
@@ -123,23 +121,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setCurrentUser(null);
         setUserRole(null);
         
-        // Add delay to ensure state updates are processed
-        setTimeout(() => {
-          setIsLoading(false);
-          setAuthInitialized(true);
-          console.log("Sign out processed, loading complete");
-        }, 1000);
+        // Update flags immediately without delay
+        setIsLoading(false);
+        setAuthInitialized(true);
+        console.log("Sign out processed, loading complete");
       } else {
         // For any other event, ensure we're not stuck in loading state
-        setTimeout(() => {
-          setIsLoading(false);
-          setAuthInitialized(true);
-          console.log("Other auth event processed, loading complete");
-        }, 1000);
+        setIsLoading(false);
+        setAuthInitialized(true);
+        console.log("Other auth event processed, loading complete");
       }
     });
 
-    // Regular session check
+    // Regular session check to prevent stale sessions
     const sessionCheckInterval = setInterval(() => {
       supabase.auth.getSession().then(({ data }) => {
         if (!data.session && currentUser) {
@@ -158,7 +152,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       clearInterval(sessionCheckInterval);
     };
-  }, []);
+  }, [currentUser]); // Add currentUser as dependency to detect session changes
 
   const login = async (contact: string): Promise<void> => {
     setIsLoading(true);
@@ -178,9 +172,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.error(errorMessage);
       throw error;
     } finally {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
+      setIsLoading(false);
     }
   };
 
@@ -224,9 +216,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.error(errorMessage);
       throw error;
     } finally {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1000);
+      setIsLoading(false);
+      setAuthInitialized(true);
     }
   };
 
@@ -242,9 +233,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.error(errorMessage);
       throw error;
     } finally {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1000);
+      setIsLoading(false);
+      setAuthInitialized(true);
     }
   };
 
@@ -270,9 +260,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.error(errorMessage);
       throw error;
     } finally {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
+      setIsLoading(false);
     }
   };
 

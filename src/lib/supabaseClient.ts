@@ -8,6 +8,13 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // Create a single instance of the supabase client
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
+// Define the window type extension
+declare global {
+  interface Window {
+    supabase: typeof supabase;
+  }
+}
+
 // Add to global scope for debugging
 if (typeof window !== 'undefined') {
   window.supabase = supabase
