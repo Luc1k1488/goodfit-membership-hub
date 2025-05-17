@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -17,52 +16,47 @@ const VerifyCodePage = () => {
   const [name, setName] = useState("");
   const [isRegistration, setIsRegistration] = useState(false);
   const [error, setError] = useState("");
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const { verifyOTP, login, register } = useAuth();
-  
+
   useEffect(() => {
-    // Get data from location state
     const state = location.state as { phone?: string; name?: string; isRegistration?: boolean } | null;
-    
+
     if (state?.phone) {
       setPhone(state.phone);
-      
       if (state.name) {
         setName(state.name);
         setIsRegistration(true);
       }
     } else {
-      // If no phone number was provided, redirect back to login
       toast.error("Номер телефона не указан");
       navigate("/login");
     }
   }, [location, navigate]);
-  
+
   const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError("");
-    
+
     try {
       if (!phone || otp.length < 6) {
         throw new Error("Пожалуйста, введите полный код подтверждения");
       }
-      
-      console.log("Attempting to verify OTP:", { phone, otp, isRegistration });
-      
-      // Call verifyOTP and await the result
+
       const user = await verifyOTP(phone, otp);
-      console.log("Verification successful, user:", user);
-      
-      // Show success toast
-      toast.success(isRegistration 
-        ? "Регистрация успешно завершена!" 
-        : `Добро пожаловать${user.name ? ', ' + user.name : ''}!`
+
+      if (!user || !user.role) {
+        throw new Error("Не удалось получить данные пользователя");
+      }
+
+      toast.success(isRegistration
+        ? "Регистрация успешно завершена!"
+        : `Добро пожаловать${user.name ? `, ${user.name}` : ""}!`
       );
-      
-      // Redirect based on role with slight delay to show toast
+
       setTimeout(() => {
         if (user.role === "ADMIN") {
           navigate("/admin-dashboard");
@@ -72,7 +66,7 @@ const VerifyCodePage = () => {
           navigate("/profile");
         }
       }, 500);
-      
+
     } catch (error: any) {
       console.error("OTP verification error:", error);
       setError(error.message || "Ошибка проверки кода");
@@ -81,11 +75,11 @@ const VerifyCodePage = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleResendCode = async () => {
     setIsSubmitting(true);
     setError("");
-    
+
     try {
       if (isRegistration) {
         await register(name, phone);
@@ -101,14 +95,14 @@ const VerifyCodePage = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header>
         <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => navigate(isRegistration ? "/register" : "/login")}
             className="mr-2"
           >
@@ -119,7 +113,7 @@ const VerifyCodePage = () => {
           </h1>
         </div>
       </Header>
-      
+
       <div className="flex-1 flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
@@ -128,14 +122,14 @@ const VerifyCodePage = () => {
               Введите код из SMS для подтверждения
             </p>
           </div>
-          
+
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           <form className="space-y-6" onSubmit={handleVerifyOtp}>
             <div className="space-y-4">
               <Label htmlFor="otp">Введите код из SMS</Label>
@@ -145,12 +139,17 @@ const VerifyCodePage = () => {
                   value={otp}
                   onChange={(value) => {
                     setOtp(value);
-                    setError(""); // Clear error when typing
+                    setError("");
                   }}
                   render={({ slots }) => (
                     <InputOTPGroup>
                       {slots.map((slot, i) => (
-                        <InputOTPSlot key={i} index={i} {...slot} />
+                        <InputOTPSlot
+                          key={i}
+                          index={i}
+                          {...slot}
+                          className="text-black dark:text-white text-xl font-bold"
+                        />
                       ))}
                     </InputOTPGroup>
                   )}
@@ -160,7 +159,7 @@ const VerifyCodePage = () => {
                 Код отправлен на номер {phone}
               </p>
             </div>
-            
+
             <Button
               type="submit"
               className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-6"
@@ -173,7 +172,7 @@ const VerifyCodePage = () => {
                 </>
               ) : "Подтвердить"}
             </Button>
-            
+
             <div className="text-center text-sm">
               <Button
                 variant="link"
@@ -184,7 +183,7 @@ const VerifyCodePage = () => {
                 {isRegistration ? "Изменить данные" : "Изменить номер телефона"}
               </Button>
             </div>
-            
+
             <div className="text-center text-sm mt-4">
               <Button
                 variant="link"
