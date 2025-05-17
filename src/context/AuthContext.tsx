@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
@@ -67,23 +66,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setCurrentUser(null);
       setUserRole(null);
     } finally {
-      // Always set these flags in finally block to ensure they're updated
+      // CRITICAL: Always set these flags to ensure they're updated
       setIsLoading(false);
-      setAuthInitialized(true); // CRITICAL: Always set this to true when done
+      setAuthInitialized(true);
       console.log("Auth initialized, loading complete");
     }
   };
 
-  // Initialize auth state on mount
+  // Initialize auth state on mount and set up auth listener
   useEffect(() => {
-    // First initialization
+    // First initialization - fetch user and set initialized flag
     fetchCurrentUser();
 
     // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event);
+      console.log("Auth state changed:", event, "Session exists:", !!session);
       
-      // First set loading to true for any auth event
+      // Set loading to true for any auth event
       setIsLoading(true);
       
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -107,6 +106,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             console.log("User data updated after auth change:", user);
           } catch (error) {
             console.error("Error during auth state change:", error);
+            // Only reset user if we failed to get the latest data
             setCurrentUser(null);
             setUserRole(null);
           } finally {
@@ -121,7 +121,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setCurrentUser(null);
         setUserRole(null);
         
-        // Update flags immediately without delay
+        // Update flags immediately
         setIsLoading(false);
         setAuthInitialized(true);
         console.log("Sign out processed, loading complete");
@@ -281,7 +281,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       isLoading, 
       authInitialized, 
       userExists: !!currentUser,
-      role: userRole 
+      role: userRole,
+      userId: currentUser?.id
     });
   }, [isLoading, authInitialized, currentUser, userRole]);
 

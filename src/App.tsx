@@ -33,12 +33,32 @@ const queryClient = new QueryClient({
   },
 });
 
-// Improved ProtectedRoute component with consistent loading behavior
+// Improved ProtectedRoute component with better loading behavior and debugging
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole?: "USER" | "PARTNER" | "ADMIN" }) => {
   const { currentUser, isLoading, authInitialized } = useAuth();
   
-  // Always show loader while authentication is initializing or loading
-  if (!authInitialized || isLoading) {
+  // Add explicit debugging logs
+  console.log("ProtectedRoute:", { 
+    authInitialized, 
+    isLoading, 
+    hasUser: !!currentUser, 
+    userRole: currentUser?.role 
+  });
+  
+  // Show loader if authentication is not yet initialized
+  if (!authInitialized) {
+    console.log("ProtectedRoute: Auth not initialized, showing loader");
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-lg">Инициализация...</p>
+      </div>
+    );
+  }
+  
+  // Show loader if still loading user data
+  if (isLoading) {
+    console.log("ProtectedRoute: Auth is loading, showing loader");
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
@@ -47,15 +67,16 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
     );
   }
 
-  // Only check auth after loading is complete
+  // Only redirect if auth is initialized AND there's no user
   if (!currentUser) {
-    console.log("Protected route - no user found, redirecting to login");
+    console.log("ProtectedRoute: Auth initialized but no user, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
-  // Check role requirements
+  // Check role requirements if auth is initialized and user exists
   if (requiredRole && currentUser.role !== requiredRole) {
-    console.log("Protected route - wrong role, redirecting");
+    console.log("ProtectedRoute: Wrong role, redirecting to appropriate dashboard");
+    
     if (currentUser.role === "ADMIN") {
       return <Navigate to="/admin-dashboard" replace />;
     } else if (currentUser.role === "PARTNER") {
@@ -65,6 +86,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
     }
   }
 
+  console.log("ProtectedRoute: Rendering protected content");
   return children;
 };
 
