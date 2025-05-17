@@ -1,3 +1,4 @@
+
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/auth";
 import { Loader2 } from "lucide-react";
@@ -33,10 +34,10 @@ export const ProtectedRoute = ({
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && currentUser.role !== requiredRole) {
-    if (currentUser.role === "ADMIN") {
+  if (requiredRole && userRole !== requiredRole) {
+    if (userRole === "ADMIN") {
       return <Navigate to="/admin-dashboard" replace />;
-    } else if (currentUser.role === "PARTNER") {
+    } else if (userRole === "PARTNER") {
       return <Navigate to="/partner-dashboard" replace />;
     } else {
       return <Navigate to="/profile" replace />;

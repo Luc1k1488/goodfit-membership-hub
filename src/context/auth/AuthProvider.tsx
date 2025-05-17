@@ -1,4 +1,3 @@
-
 import { useState, useEffect, ReactNode } from "react";
 import { User } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
@@ -47,6 +46,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Always set these states regardless of success/failure
       setIsLoading(false);
       setAuthInitialized(true);
+      console.log("authInitialized → true");
     }
   };
 

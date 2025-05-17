@@ -2,6 +2,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/auth";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const ProtectedRoute = ({
   children,
@@ -64,6 +65,3 @@ export const ProtectedRoute = ({
 
   return children;
 };
-
-// Import Button for improved UI
-import { Button } from "@/components/ui/button";
