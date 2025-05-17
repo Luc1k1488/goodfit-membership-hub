@@ -28,18 +28,54 @@ const VerifyCodePage = () => {
     // Clear any previous errors
     setError("");
     
-    const state = location.state as { contact?: string; name?: string; isRegistration?: boolean } | null;
-    console.log("Verify page state:", state);
-
-    if (state?.contact) {
-      setContact(state.contact);
-      setContactType(isEmail(state.contact) ? "email" : "phone");
+    // Extract state from location or URL parameters
+    const extractStateData = () => {
+      // First check location.state
+      if (location.state && typeof location.state === 'object') {
+        const state = location.state as { contact?: string; name?: string; isRegistration?: boolean };
+        console.log("Verify page state from location:", state);
+        
+        if (state.contact) {
+          return state;
+        }
+      }
       
-      if (state.name) {
-        setName(state.name);
+      // If no valid state in location, check URL parameters
+      const params = new URLSearchParams(location.search);
+      const email = params.get('email');
+      const phone = params.get('phone');
+      
+      if (email || phone) {
+        console.log("Verify page params:", { email, phone });
+        return { 
+          contact: email || phone || '', 
+          isRegistration: params.get('isRegistration') === 'true'
+        };
+      }
+      
+      // Return empty state if nothing found
+      return null;
+    };
+    
+    const stateData = extractStateData();
+    
+    if (stateData && stateData.contact) {
+      setContact(stateData.contact);
+      setContactType(isEmail(stateData.contact) ? "email" : "phone");
+      
+      if (stateData.name) {
+        setName(stateData.name);
         setIsRegistration(true);
+      } else if (stateData.isRegistration) {
+        setIsRegistration(true);
+        // Try to get name from localStorage if coming from email link
+        const pendingName = localStorage.getItem('pendingRegistrationName');
+        if (pendingName) {
+          setName(pendingName);
+        }
       }
     } else {
+      console.log("No contact information provided, redirecting to login");
       toast.error("Контактные данные не указаны");
       navigate("/login");
     }

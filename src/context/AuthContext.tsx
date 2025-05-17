@@ -53,9 +53,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (user) {
           setCurrentUser(user);
           setUserRole(user.role);
+          console.log("User session established:", user);
         } else {
           setCurrentUser(null);
           setUserRole(null);
+          console.log("No user session found");
         }
       } catch (error) {
         console.error("Error in getCurrentUser:", error);
@@ -75,40 +77,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session) {
           try {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (userError) {
-              console.error("Error fetching user data:", userError);
-              setCurrentUser(null);
-              setUserRole(null);
-              return;
+            // Get or create user in DB when signed in
+            const userData: Record<string, string> = {};
+            
+            if (session.user.email) {
+              userData.email = session.user.email;
             }
-
-            if (userData) {
-              const user: User = {
-                id: userData.id,
-                name: userData.name,
-                email: userData.email || '',
-                phone: userData.phone || '',
-                role: userData.role as "USER" | "PARTNER" | "ADMIN",
-                createdAt: userData.created_at,
-                profileImage: userData.profile_image || '/placeholder.svg'
-              };
-
-              setCurrentUser(user);
-              setUserRole(user.role);
+            
+            if (session.user.phone) {
+              userData.phone = session.user.phone;
             }
+            
+            const user = await getUserOrCreate(session.user.id, userData);
+            
+            setCurrentUser(user);
+            setUserRole(user.role);
+            console.log("User data updated after auth change:", user);
           } catch (error) {
             console.error("Error during auth state change:", error);
+            setCurrentUser(null);
+            setUserRole(null);
+          } finally {
+            setIsLoading(false);
           }
         }
       } else if (event === 'SIGNED_OUT') {
+        console.log("User signed out");
         setCurrentUser(null);
         setUserRole(null);
+        setIsLoading(false);
       }
     });
 
@@ -146,14 +143,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     console.log("Starting OTP verification for:", contact, "with code:", otp);
     
     try {
+      // Verify the OTP code
       const supabaseUser = await verifyOTPCode(contact, otp);
       console.log("OTP verification successful, getting user data...");
       
-      // Получаем или создаем пользователя в базе данных
-      const userData = isEmail(contact) 
-        ? { email: contact }
-        : { phone: formatPhoneNumber(contact) };
+      // Get user data based on contact type
+      const userData: Record<string, string> = {};
       
+      // Determine whether this is a login via email or phone
+      if (isEmail(contact)) {
+        userData.email = contact;
+      } else {
+        userData.phone = formatPhoneNumber(contact);
+      }
+      
+      // Get pending registration name if this is part of a registration flow
+      const pendingName = localStorage.getItem('pendingRegistrationName');
+      if (pendingName) {
+        userData.name = pendingName;
+        localStorage.removeItem('pendingRegistrationName');
+      }
+      
+      // Get or create user in database
       const user = await getUserOrCreate(supabaseUser.id, userData);
 
       setCurrentUser(user);

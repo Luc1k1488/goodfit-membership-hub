@@ -20,21 +20,27 @@ const ProfilePage = () => {
   const { currentUser, isLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("bookings");
   const navigate = useNavigate();
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
   useEffect(() => {
     const checkAuth = async () => {
       console.log("ProfilePage: checking auth state:", { currentUser, isLoading });
       
-      // Wait a bit to make sure authentication state is loaded
-      if (!isLoading && !currentUser) {
+      // Only redirect if not loading and we've completed initial load check
+      if (!isLoading && !currentUser && initialLoadComplete) {
         console.log("User not authenticated, redirecting to login");
         toast.error("Необходимо войти в систему");
         navigate("/login");
       }
+      
+      // Mark initial load as complete if we're not loading
+      if (!isLoading && !initialLoadComplete) {
+        setInitialLoadComplete(true);
+      }
     };
     
     checkAuth();
-  }, [currentUser, isLoading, navigate]);
+  }, [currentUser, isLoading, navigate, initialLoadComplete]);
   
   const handleLogout = async () => {
     try {
@@ -57,7 +63,12 @@ const ProfilePage = () => {
   
   // If not loading and no user, we should be redirected by the useEffect
   if (!currentUser) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-lg">Перенаправление...</p>
+      </div>
+    );
   }
   
   // Filter bookings by status
@@ -95,34 +106,36 @@ const ProfilePage = () => {
               )}
             </div>
             <div>
-              <CardTitle>{currentUser ? (currentUser.name || 'Пользователь') : 'Загрузка...'}</CardTitle>
-              <p className="text-sm text-muted-foreground">{currentUser ? currentUser.phone : ''}</p>
-              {currentUser && currentUser.role !== 'USER' && (
-                <Badge className="mt-1 bg-blue-500">{currentUser.role === 'ADMIN' ? 'Администратор' : 'Партнёр'}</Badge>
+              <CardTitle>{currentUser.name || 'Пользователь'}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {currentUser.phone || currentUser.email || ''}
+              </p>
+              {currentUser.role !== 'USER' && (
+                <Badge className="mt-1 bg-blue-500">
+                  {currentUser.role === 'ADMIN' ? 'Администратор' : 'Партнёр'}
+                </Badge>
               )}
             </div>
           </CardHeader>
           <CardContent className="pt-2 pb-4">
             <div className="flex gap-4 mt-2">
-              {currentUser && (
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => {
-                    if (currentUser.role === 'ADMIN') {
-                      navigate('/admin-dashboard');
-                    } else if (currentUser.role === 'PARTNER') {
-                      navigate('/partner-dashboard');
-                    }
-                  }}
-                >
-                  {currentUser.role === 'ADMIN' 
-                    ? 'Админ панель' 
-                    : currentUser.role === 'PARTNER' 
-                      ? 'Панель партнёра'
-                      : 'Настройки'}
-                </Button>
-              )}
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => {
+                  if (currentUser.role === 'ADMIN') {
+                    navigate('/admin-dashboard');
+                  } else if (currentUser.role === 'PARTNER') {
+                    navigate('/partner-dashboard');
+                  }
+                }}
+              >
+                {currentUser.role === 'ADMIN' 
+                  ? 'Админ панель' 
+                  : currentUser.role === 'PARTNER' 
+                    ? 'Панель партнёра'
+                    : 'Настройки'}
+              </Button>
               <Button 
                 variant="outline" 
                 className="flex-1"

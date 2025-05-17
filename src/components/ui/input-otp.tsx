@@ -1,6 +1,6 @@
 
 import * as React from "react"
-import { OTPInput, OTPInputContext, SlotProps } from "input-otp"
+import { OTPInput, OTPInputContext } from "input-otp"
 import { Dot } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -48,7 +48,9 @@ const InputOTPSlot = React.forwardRef<
       {...props}
     >
       {char ? (
-        <span className="text-foreground font-bold text-xl">{char}</span>
+        <div className="animate-in fade-in-50">
+          <span className="text-foreground font-bold text-xl">{char}</span>
+        </div>
       ) : (
         <span className="text-muted-foreground opacity-50">0</span>
       )}

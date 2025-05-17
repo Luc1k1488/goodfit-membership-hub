@@ -99,7 +99,7 @@ export const getUserOrCreate = async (userId: string, userData: {
   phone?: string;
   email?: string;
 }): Promise<User> => {
-  console.log("Getting or creating user with ID:", userId);
+  console.log("Getting or creating user with ID:", userId, "userData:", userData);
   
   try {
     // Проверяем, существует ли пользователь в базе данных
@@ -109,56 +109,92 @@ export const getUserOrCreate = async (userId: string, userData: {
       .eq('id', userId)
       .single();
 
-    // Если пользователь не существует, создаем новую запись
-    if (userError) {
-      console.log("User not found in database, creating new user...");
+    // Если пользователь существует, обновляем данные, которые могли измениться
+    if (!userError && existingUser) {
+      console.log("User found in database:", existingUser);
       
-      // Создаем нового пользователя с ролью USER по умолчанию
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert([
-          {
-            id: userId,
-            name: userData.name || '',
-            phone: userData.phone || '',
-            email: userData.email || '',
-            role: 'USER',
-            created_at: new Date().toISOString()
-          }
-        ])
-        .select()
-        .single();
-
-      if (createError) {
-        console.error("Error creating new user:", createError);
-        throw createError;
+      // Check if we need to update any user data
+      const updateData: Record<string, any> = {};
+      let needsUpdate = false;
+      
+      // If user has no phone but we have one, update it
+      if (!existingUser.phone && userData.phone) {
+        updateData.phone = userData.phone;
+        needsUpdate = true;
+      }
+      
+      // If user has no email but we have one, update it
+      if (!existingUser.email && userData.email) {
+        updateData.email = userData.email;
+        needsUpdate = true;
+      }
+      
+      // If we have a name and the existing one is empty, update it
+      if (userData.name && (!existingUser.name || existingUser.name.trim() === '')) {
+        updateData.name = userData.name;
+        needsUpdate = true;
+      }
+      
+      // If we need to update user data
+      if (needsUpdate) {
+        console.log("Updating existing user data with:", updateData);
+        const { error: updateError } = await supabase
+          .from('users')
+          .update(updateData)
+          .eq('id', userId);
+          
+        if (updateError) {
+          console.error("Error updating user data:", updateError);
+        }
       }
 
-      console.log("New user created successfully:", newUser);
-
       const user: User = {
-        id: newUser.id,
-        name: newUser.name || '',
-        email: newUser.email || '',
-        phone: newUser.phone || '',
-        role: newUser.role as "USER" | "PARTNER" | "ADMIN",
-        createdAt: newUser.created_at,
-        profileImage: newUser.profile_image || '/placeholder.svg'
+        id: existingUser.id,
+        name: existingUser.name || userData.name || '',
+        email: existingUser.email || userData.email || '',
+        phone: existingUser.phone || userData.phone || '',
+        role: existingUser.role as "USER" | "PARTNER" | "ADMIN",
+        createdAt: existingUser.created_at,
+        profileImage: existingUser.profile_image || '/placeholder.svg'
       };
 
       return user;
     }
 
-    console.log("User found in database:", existingUser);
+    // Если пользователь не существует, создаем новую запись
+    console.log("User not found in database, creating new user with data:", userData);
+    
+    // Создаем нового пользователя с ролью USER по умолчанию
+    const { data: newUser, error: createError } = await supabase
+      .from('users')
+      .insert([
+        {
+          id: userId,
+          name: userData.name || '',
+          phone: userData.phone || '',
+          email: userData.email || '',
+          role: 'USER',
+          created_at: new Date().toISOString()
+        }
+      ])
+      .select()
+      .single();
+
+    if (createError) {
+      console.error("Error creating new user:", createError);
+      throw createError;
+    }
+
+    console.log("New user created successfully:", newUser);
 
     const user: User = {
-      id: existingUser.id,
-      name: existingUser.name || '',
-      email: existingUser.email || '',
-      phone: existingUser.phone || '',
-      role: existingUser.role as "USER" | "PARTNER" | "ADMIN",
-      createdAt: existingUser.created_at,
-      profileImage: existingUser.profile_image || '/placeholder.svg'
+      id: newUser.id,
+      name: newUser.name || '',
+      email: newUser.email || '',
+      phone: newUser.phone || '',
+      role: newUser.role as "USER" | "PARTNER" | "ADMIN",
+      createdAt: newUser.created_at,
+      profileImage: newUser.profile_image || '/placeholder.svg'
     };
 
     return user;
@@ -209,15 +245,29 @@ export const getCurrentUserSession = async (): Promise<{
       .single();
 
     if (userError) {
-      console.error("Error fetching user data:", userError);
-      return { session, user: null };
+      console.error("User not found in database, attempting to create:", userError);
+      
+      // User authenticated but not in users table - create entry with available data
+      const authUser = session.user;
+      const newUserData = {
+        email: authUser.email || '',
+        phone: authUser.phone || ''
+      };
+      
+      try {
+        const user = await getUserOrCreate(authUser.id, newUserData);
+        return { session, user };
+      } catch (createError) {
+        console.error("Failed to create missing user:", createError);
+        return { session, user: null };
+      }
     }
 
     if (userData) {
       // Преобразуем данные пользователя из базы данных в формат приложения
       const user: User = {
         id: userData.id,
-        name: userData.name,
+        name: userData.name || '',
         email: userData.email || '',
         phone: userData.phone || '',
         role: userData.role as "USER" | "PARTNER" | "ADMIN",

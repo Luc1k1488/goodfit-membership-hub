@@ -4,8 +4,8 @@ import { Toaster as Sonner } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AppProvider } from "@/context/AppContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { AppProvider } from "@/context/AppContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { BottomNavBar } from "@/components/BottomNavBar";
 import GymsPage from "./pages/GymsPage";
@@ -22,6 +22,7 @@ import BookingPage from "./pages/BookingPage";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./context/AuthContext";
 import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -29,11 +30,31 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole?: "USER" | "PARTNER" | "ADMIN" }) => {
   const { currentUser, isLoading } = useAuth();
 
+  // Add delay to loading to prevent flashing
+  const [showLoader, setShowLoader] = useState(false);
+  
+  useEffect(() => {
+    // Only show loader after a brief delay to avoid flashing
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        setShowLoader(true);
+      }
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen">
-      <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-      <p className="text-lg ml-2">Загрузка...</p>
-    </div>;
+    if (!showLoader) {
+      return null; // Don't show anything initially
+    }
+    
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-lg">Загрузка...</p>
+      </div>
+    );
   }
 
   if (!currentUser) {
@@ -52,6 +73,9 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
 
   return children;
 };
+
+// Import useState at the top
+import { useState } from "react";
 
 const AppRoutes = () => {
   return (
@@ -94,9 +118,6 @@ const AppRoutes = () => {
   );
 };
 
-// Must import at the top
-import { Loader2 } from "lucide-react";
-
 const App = () => {
   // Register PWA installation effect
   useEffect(() => {
@@ -119,22 +140,22 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AuthProvider>
-          <AppProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner position="top-center" />
-              <BrowserRouter>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner position="top-center" />
                 <div className="flex flex-col min-h-screen pb-16 bg-background text-foreground">
                   <main className="flex-1">
                     <AppRoutes />
                   </main>
                   <BottomNavBar />
                 </div>
-              </BrowserRouter>
-            </TooltipProvider>
-          </AppProvider>
-        </AuthProvider>
+              </TooltipProvider>
+            </AppProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
   );
