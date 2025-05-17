@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,18 +12,22 @@ import { FitnessClass } from "@/types";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Header } from "@/components/Header";
+import { toast } from "sonner";
 
 const ProfilePage = () => {
   const { user, bookings, getClassById, getGymById } = useApp();
-  const { isLoading, logout } = useAuth();
+  const { currentUser, isLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("bookings");
   const navigate = useNavigate();
   
   useEffect(() => {
-    if (!isLoading && !user) {
+    // Используем currentUser вместо user для проверки аутентификации
+    console.log("ProfilePage: checking auth state:", { currentUser, isLoading });
+    if (!isLoading && !currentUser) {
+      toast.error("Необходимо войти в систему");
       navigate("/login");
     }
-  }, [user, isLoading, navigate]);
+  }, [currentUser, isLoading, navigate]);
   
   if (isLoading) {
     return (
@@ -35,9 +38,15 @@ const ProfilePage = () => {
     );
   }
   
-  if (!user) {
+  // Проверка наличия пользователя, если загрузка завершена
+  if (!currentUser && !isLoading) {
+    toast.error("Пользователь не найден");
+    navigate("/login");
     return null;
   }
+  
+  // Отображаем страницу профиля только если пользователь авторизован
+  const displayUser = currentUser || user; // Используем currentUser, если доступен, иначе fallback на user из AppContext
   
   // Filter bookings by status
   const activeBookings = bookings.filter(booking => booking.status === 'BOOKED');
@@ -54,8 +63,13 @@ const ProfilePage = () => {
     .filter(Boolean) as FitnessClass[];
   
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Ошибка при выходе из системы");
+    }
   };
   
   return (
@@ -68,10 +82,10 @@ const ProfilePage = () => {
         <Card>
           <CardHeader className="flex flex-row items-center gap-4 pb-2">
             <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden">
-              {user.profileImage ? (
+              {displayUser && displayUser.profileImage ? (
                 <img 
-                  src={user.profileImage} 
-                  alt={user.name} 
+                  src={displayUser.profileImage} 
+                  alt={displayUser.name || "Пользователь"} 
                   className="object-cover w-full h-full"
                 />
               ) : (
@@ -79,32 +93,34 @@ const ProfilePage = () => {
               )}
             </div>
             <div>
-              <CardTitle>{user.name || 'Пользователь'}</CardTitle>
-              <p className="text-sm text-muted-foreground">{user.phone}</p>
-              {user.role !== 'USER' && (
-                <Badge className="mt-1 bg-blue-500">{user.role === 'ADMIN' ? 'Администратор' : 'Партнёр'}</Badge>
+              <CardTitle>{displayUser ? (displayUser.name || 'Пользователь') : 'Загрузка...'}</CardTitle>
+              <p className="text-sm text-muted-foreground">{displayUser ? displayUser.phone : ''}</p>
+              {displayUser && displayUser.role !== 'USER' && (
+                <Badge className="mt-1 bg-blue-500">{displayUser.role === 'ADMIN' ? 'Администратор' : 'Партнёр'}</Badge>
               )}
             </div>
           </CardHeader>
           <CardContent className="pt-2 pb-4">
             <div className="flex gap-4 mt-2">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => {
-                  if (user.role === 'ADMIN') {
-                    navigate('/admin-dashboard');
-                  } else if (user.role === 'PARTNER') {
-                    navigate('/partner-dashboard');
-                  }
-                }}
-              >
-                {user.role === 'ADMIN' 
-                  ? 'Админ панель' 
-                  : user.role === 'PARTNER' 
-                    ? 'Панель партнёра'
-                    : 'Настройки'}
-              </Button>
+              {displayUser && (
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    if (displayUser.role === 'ADMIN') {
+                      navigate('/admin-dashboard');
+                    } else if (displayUser.role === 'PARTNER') {
+                      navigate('/partner-dashboard');
+                    }
+                  }}
+                >
+                  {displayUser.role === 'ADMIN' 
+                    ? 'Админ панель' 
+                    : displayUser.role === 'PARTNER' 
+                      ? 'Панель партнёра'
+                      : 'Настройки'}
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 className="flex-1"

@@ -3,6 +3,14 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { User } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
+import { 
+  sendOTP, 
+  verifyOTPCode, 
+  getUserOrCreate, 
+  logoutUser,
+  getCurrentUserSession,
+  formatPhoneNumber
+} from "@/services/authService";
 
 type AuthContextType = {
   currentUser: User | null;
@@ -39,50 +47,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoading(true);
       
       try {
-        // Get current user session from Supabase
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.error("Error getting session:", sessionError);
-          setCurrentUser(null);
-          setUserRole(null);
-          return;
-        }
+        const { session, user } = await getCurrentUserSession();
         
-        if (!session) {
-          setCurrentUser(null);
-          setUserRole(null);
-          return;
-        }
-        
-        // Get user data from database
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (userError) {
-          console.error("Error fetching user data:", userError);
-          setCurrentUser(null);
-          setUserRole(null);
-          return;
-        }
-
-        if (userData) {
-          // Transform database user to app user format
-          const user: User = {
-            id: userData.id,
-            name: userData.name,
-            email: userData.email || '',
-            phone: userData.phone || '',
-            role: userData.role as "USER" | "PARTNER" | "ADMIN",
-            createdAt: userData.created_at,
-            profileImage: userData.profile_image || '/placeholder.svg'
-          };
-
+        if (user) {
           setCurrentUser(user);
           setUserRole(user.role);
+        } else {
+          setCurrentUser(null);
+          setUserRole(null);
         }
       } catch (error) {
         console.error("Error in getCurrentUser:", error);
@@ -97,34 +69,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event);
+      
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
 
-          if (userError) {
-            console.error("Error fetching user data:", userError);
-            setCurrentUser(null);
-            setUserRole(null);
-            return;
-          }
+            if (userError) {
+              console.error("Error fetching user data:", userError);
+              setCurrentUser(null);
+              setUserRole(null);
+              return;
+            }
 
-          if (userData) {
-            const user: User = {
-              id: userData.id,
-              name: userData.name,
-              email: userData.email || '',
-              phone: userData.phone || '',
-              role: userData.role as "USER" | "PARTNER" | "ADMIN",
-              createdAt: userData.created_at,
-              profileImage: userData.profile_image || '/placeholder.svg'
-            };
+            if (userData) {
+              const user: User = {
+                id: userData.id,
+                name: userData.name,
+                email: userData.email || '',
+                phone: userData.phone || '',
+                role: userData.role as "USER" | "PARTNER" | "ADMIN",
+                createdAt: userData.created_at,
+                profileImage: userData.profile_image || '/placeholder.svg'
+              };
 
-            setCurrentUser(user);
-            setUserRole(user.role);
+              setCurrentUser(user);
+              setUserRole(user.role);
+            }
+          } catch (error) {
+            console.error("Error during auth state change:", error);
           }
         }
       } else if (event === 'SIGNED_OUT') {
@@ -144,18 +122,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsLoading(true);
     
     try {
-      // Format phone number to ensure E.164 format
-      const formattedPhone = formatPhoneNumber(phone);
-      console.log("Attempting login with phone:", formattedPhone);
-      
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: formattedPhone,
-      });
-
-      if (error) {
-        console.error("SignInWithOtp error:", error);
-        throw error;
-      }
+      console.log("Attempting login with phone:", phone);
+      await sendOTP(phone);
       
       toast.success("Код подтверждения отправлен на ваш телефон", {
         description: "Пожалуйста, введите полученный код"
@@ -175,95 +143,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     console.log("Starting OTP verification for phone:", phone, "with code:", otp);
     
     try {
-      const formattedPhone = formatPhoneNumber(phone);
+      const supabaseUser = await verifyOTPCode(phone, otp);
+      console.log("OTP verification successful, getting user data...");
       
-      console.log("Verifying OTP with Supabase...");
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: formattedPhone,
-        token: otp,
-        type: 'sms'
-      });
-
-      if (error) {
-        console.error("OTP verification error:", error);
-        throw error;
-      }
-
-      if (!data.user) {
-        console.error("No user returned from verification");
-        throw new Error('Пользователь не найден');
-      }
-
-      console.log("OTP verification successful, checking user in database...");
-      
-      // Check if user exists in our users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      // If user doesn't exist in our table, create a new record
-      if (userError) {
-        console.log("User not found in database, creating new user...");
-        
-        // Get pending name from localStorage if exists
-        const pendingName = localStorage.getItem('pendingRegistrationName') || '';
-        localStorage.removeItem('pendingRegistrationName'); // Clear it after using
-        
-        // Create new user with default role USER
-        const { data: newUser, error: createError } = await supabase
-          .from('users')
-          .insert([
-            {
-              id: data.user.id,
-              name: pendingName,
-              phone: formattedPhone,
-              role: 'USER',
-              created_at: new Date().toISOString()
-            }
-          ])
-          .select()
-          .single();
-
-        if (createError) {
-          console.error("Error creating new user:", createError);
-          throw createError;
-        }
-
-        console.log("New user created successfully:", newUser);
-
-        const user: User = {
-          id: newUser.id,
-          name: newUser.name || '',
-          email: newUser.email || '',
-          phone: newUser.phone || '',
-          role: newUser.role as "USER" | "PARTNER" | "ADMIN",
-          createdAt: newUser.created_at,
-          profileImage: newUser.profile_image || '/placeholder.svg'
-        };
-
-        setCurrentUser(user);
-        setUserRole(user.role);
-        return user;
-      }
-
-      console.log("User found in database:", userData);
-
-      const user: User = {
-        id: userData.id,
-        name: userData.name || '',
-        email: userData.email || '',
-        phone: userData.phone || '',
-        role: userData.role as "USER" | "PARTNER" | "ADMIN",
-        createdAt: userData.created_at,
-        profileImage: userData.profile_image || '/placeholder.svg'
-      };
+      // Получаем или создаем пользователя в базе данных
+      const user = await getUserOrCreate(supabaseUser.id, { phone: formatPhoneNumber(phone) });
 
       setCurrentUser(user);
       setUserRole(user.role);
       
-      toast.success(`Добро пожаловать${user.name ? ', ' + user.name : ''}!`);
+      console.log("User successfully authenticated:", user);
       return user;
     } catch (error) {
       console.error("Error during verification process:", error);
@@ -279,15 +168,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        throw error;
-      }
-      
+      await logoutUser();
       setCurrentUser(null);
       setUserRole(null);
-      toast.info('Вы вышли из системы');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка при выходе';
       toast.error(errorMessage);
@@ -301,18 +184,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsLoading(true);
     
     try {
-      const formattedPhone = formatPhoneNumber(phone);
+      console.log("Starting registration for:", name, phone);
       
-      // For registration, we first send OTP
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: formattedPhone,
-      });
-
-      if (error) {
-        throw error;
-      }
+      // Для регистрации сначала отправляем OTP
+      await sendOTP(phone);
       
-      // Store name temporarily (will be saved after OTP verification)
+      // Сохраняем имя временно (будет сохранено после проверки OTP)
       localStorage.setItem('pendingRegistrationName', name);
       
       toast.success("Код подтверждения отправлен на ваш телефон", {
@@ -325,21 +202,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Helper function to format phone to E.164
-  const formatPhoneNumber = (phone: string): string => {
-    // Remove all non-digit characters
-    const digits = phone.replace(/\D/g, '');
-    
-    // Ensure it starts with country code (Russia)
-    if (digits.startsWith('7') || digits.startsWith('8')) {
-      return `+7${digits.substring(1)}`;
-    } else if (!digits.startsWith('+')) {
-      return `+7${digits}`;
-    }
-    
-    return phone;
   };
 
   const value = {

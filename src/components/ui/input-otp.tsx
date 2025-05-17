@@ -35,8 +35,7 @@ const InputOTPSlot = React.forwardRef<
 >(({ index, className, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext)
   const slot = inputOTPContext?.slots?.[index]
-  // Explicitly cast to SlotProps to access properties
-  const { char, hasFakeCaret, isActive } = slot as SlotProps
+  const { char, hasFakeCaret, isActive } = slot || {}
 
   return (
     <div
@@ -48,9 +47,9 @@ const InputOTPSlot = React.forwardRef<
       )}
       {...props}
     >
-      {char && (
-        <span className="text-black dark:text-white font-bold text-xl">{char}</span>
-      )}
+      {char ? (
+        <span className="text-foreground font-bold text-xl">{char}</span>
+      ) : null}
       {hasFakeCaret && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />

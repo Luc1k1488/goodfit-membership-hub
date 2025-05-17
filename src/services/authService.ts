@@ -1,0 +1,188 @@
+
+import { supabase } from "@/lib/supabaseClient";
+import { User } from "@/types";
+import { toast } from "sonner";
+
+// Функция для форматирования телефонного номера в формат E.164
+export const formatPhoneNumber = (phone: string): string => {
+  // Удаляем все нецифровые символы
+  const digits = phone.replace(/\D/g, '');
+  
+  // Проверяем начало номера и форматируем для России
+  if (digits.startsWith('7') || digits.startsWith('8')) {
+    return `+7${digits.substring(1)}`;
+  } else if (!digits.startsWith('+')) {
+    return `+7${digits}`;
+  }
+  
+  return phone;
+};
+
+// Функция для отправки OTP на телефон
+export const sendOTP = async (phone: string): Promise<void> => {
+  const formattedPhone = formatPhoneNumber(phone);
+  console.log("Sending OTP to:", formattedPhone);
+  
+  const { error } = await supabase.auth.signInWithOtp({
+    phone: formattedPhone,
+  });
+
+  if (error) {
+    console.error("SignInWithOtp error:", error);
+    throw error;
+  }
+  
+  return;
+};
+
+// Функция для проверки OTP кода
+export const verifyOTPCode = async (phone: string, otp: string): Promise<any> => {
+  const formattedPhone = formatPhoneNumber(phone);
+  console.log("Verifying OTP for phone:", formattedPhone);
+  
+  const { data, error } = await supabase.auth.verifyOtp({
+    phone: formattedPhone,
+    token: otp,
+    type: 'sms'
+  });
+
+  if (error) {
+    console.error("OTP verification error:", error);
+    throw error;
+  }
+
+  if (!data.user) {
+    throw new Error('Пользователь не найден');
+  }
+
+  return data.user;
+};
+
+// Функция для создания или получения пользователя из базы данных
+export const getUserOrCreate = async (userId: string, userData: {
+  name?: string;
+  phone: string;
+}): Promise<User> => {
+  // Проверяем, существует ли пользователь в базе данных
+  const { data: existingUser, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  // Если пользователь не существует, создаем новую запись
+  if (userError) {
+    console.log("User not found in database, creating new user...");
+    
+    // Создаем нового пользователя с ролью USER по умолчанию
+    const { data: newUser, error: createError } = await supabase
+      .from('users')
+      .insert([
+        {
+          id: userId,
+          name: userData.name || '',
+          phone: userData.phone,
+          role: 'USER',
+          created_at: new Date().toISOString()
+        }
+      ])
+      .select()
+      .single();
+
+    if (createError) {
+      console.error("Error creating new user:", createError);
+      throw createError;
+    }
+
+    console.log("New user created successfully:", newUser);
+
+    const user: User = {
+      id: newUser.id,
+      name: newUser.name || '',
+      email: newUser.email || '',
+      phone: newUser.phone || '',
+      role: newUser.role as "USER" | "PARTNER" | "ADMIN",
+      createdAt: newUser.created_at,
+      profileImage: newUser.profile_image || '/placeholder.svg'
+    };
+
+    return user;
+  }
+
+  console.log("User found in database:", existingUser);
+
+  const user: User = {
+    id: existingUser.id,
+    name: existingUser.name || '',
+    email: existingUser.email || '',
+    phone: existingUser.phone || '',
+    role: existingUser.role as "USER" | "PARTNER" | "ADMIN",
+    createdAt: existingUser.created_at,
+    profileImage: existingUser.profile_image || '/placeholder.svg'
+  };
+
+  return user;
+};
+
+// Функция для выхода из системы
+export const logoutUser = async (): Promise<void> => {
+  const { error } = await supabase.auth.signOut();
+  
+  if (error) {
+    throw error;
+  }
+  
+  toast.info('Вы вышли из системы');
+};
+
+// Функция для получения текущей сессии пользователя
+export const getCurrentUserSession = async (): Promise<{
+  session: any;
+  user: User | null;
+}> => {
+  try {
+    // Получаем текущую сессию пользователя из Supabase
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      console.error("Error getting session:", sessionError);
+      return { session: null, user: null };
+    }
+    
+    if (!session) {
+      return { session: null, user: null };
+    }
+    
+    // Получаем данные пользователя из базы данных
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+
+    if (userError) {
+      console.error("Error fetching user data:", userError);
+      return { session, user: null };
+    }
+
+    if (userData) {
+      // Преобразуем данные пользователя из базы данных в формат приложения
+      const user: User = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email || '',
+        phone: userData.phone || '',
+        role: userData.role as "USER" | "PARTNER" | "ADMIN",
+        createdAt: userData.created_at,
+        profileImage: userData.profile_image || '/placeholder.svg'
+      };
+
+      return { session, user };
+    }
+    
+    return { session, user: null };
+  } catch (error) {
+    console.error("Error in getCurrentUserSession:", error);
+    return { session: null, user: null };
+  }
+};

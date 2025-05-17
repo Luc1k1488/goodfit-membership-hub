@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -19,7 +20,7 @@ const VerifyCodePage = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyOTP, login, register } = useAuth();
+  const { verifyOTP, login, register, userRole } = useAuth();
 
   useEffect(() => {
     const state = location.state as { phone?: string; name?: string; isRegistration?: boolean } | null;
@@ -46,17 +47,20 @@ const VerifyCodePage = () => {
         throw new Error("Пожалуйста, введите полный код подтверждения");
       }
 
+      console.log("Sending verification request for phone:", phone, "with OTP:", otp);
       const user = await verifyOTP(phone, otp);
 
       if (!user || !user.role) {
         throw new Error("Не удалось получить данные пользователя");
       }
 
+      console.log("User verified successfully:", user);
       toast.success(isRegistration
         ? "Регистрация успешно завершена!"
         : `Добро пожаловать${user.name ? `, ${user.name}` : ""}!`
       );
 
+      // Короткая задержка перед перенаправлением
       setTimeout(() => {
         if (user.role === "ADMIN") {
           navigate("/admin-dashboard");
@@ -140,6 +144,7 @@ const VerifyCodePage = () => {
                   onChange={(value) => {
                     setOtp(value);
                     setError("");
+                    console.log("OTP entered:", value); // Для отладки
                   }}
                   render={({ slots }) => (
                     <InputOTPGroup>
@@ -148,7 +153,6 @@ const VerifyCodePage = () => {
                           key={i}
                           index={i}
                           {...slot}
-                          className="text-black dark:text-white text-xl font-bold"
                         />
                       ))}
                     </InputOTPGroup>
