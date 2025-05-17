@@ -13,6 +13,8 @@ export const ProtectedRoute = ({
 }) => {
   const { currentUser, isLoading, authInitialized, userRole } = useAuth();
 
+  // Если прошло больше 3 секунд и authInitialized все еще false, 
+  // считаем что произошла какая-то ошибка и перенаправляем на логин
   if (!authInitialized) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -21,6 +23,9 @@ export const ProtectedRoute = ({
         <p className="text-sm text-muted-foreground mt-2">
           (Если загрузка длится долго, попробуйте обновить страницу)
         </p>
+        <Button variant="default" className="mt-4" onClick={() => window.location.href = '/login'}>
+          Перейти к входу
+        </Button>
       </div>
     );
   }

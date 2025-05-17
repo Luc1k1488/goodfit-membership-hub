@@ -23,6 +23,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<"USER" | "PARTNER" | "ADMIN" | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
+  
+  // Создаем таймер для автоматической установки authInitialized в true
+  // если по какой-то причине это не произошло
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!authInitialized) {
+        console.log("Forced authInitialized → true (timeout)");
+        setAuthInitialized(true);
+      }
+    }, 5000); // Через 5 секунд
+    
+    return () => clearTimeout(timer);
+  }, [authInitialized]);
 
   const fetchCurrentUser = async () => {
     console.log("Fetching current user...");
@@ -52,8 +65,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
-    // Initial fetch of user data
-    fetchCurrentUser();
+    // Initial fetch of user data with timeout for safety
+    const fetchTimeout = setTimeout(() => {
+      setAuthInitialized(true);
+      setIsLoading(false);
+      console.log("Fetch timeout reached, forcing initialization");
+    }, 10000);
+    
+    fetchCurrentUser().then(() => {
+      clearTimeout(fetchTimeout);
+    });
 
     // Session expiry check
     const sessionCheckInterval = setInterval(() => {
@@ -95,13 +116,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setUserRole(null);
           } finally {
             setIsLoading(false);
+            setAuthInitialized(true);
           }
+        } else {
+          setAuthInitialized(true);
+          setIsLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         console.log("User signed out");
         setCurrentUser(null);
         setUserRole(null);
         setIsLoading(false);
+        setAuthInitialized(true);
       }
     });
 
