@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,43 +19,9 @@ const ProfilePage = () => {
   const { currentUser, isLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("bookings");
   const navigate = useNavigate();
-
-  useEffect(() => {
-    console.log("currentUser:", currentUser);
-    console.log("isLoading:", isLoading);
-    console.log("bookings:", bookings);
-  }, [currentUser, isLoading, bookings]);
-
-  if (!bookings && isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Загрузка бронирований...</p>
-      </div>
-    );
-  }
-
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
-  useEffect(() => {
-    const checkAuth = async () => {
-      console.log("ProfilePage: checking auth state:", { currentUser, isLoading });
-      
-      // Only redirect if not loading and we've completed initial load check
-      if (!isLoading && !currentUser && initialLoadComplete) {
-        console.log("User not authenticated, redirecting to login");
-        toast.error("Необходимо войти в систему");
-        navigate("/login");
-      }
-      
-      // Mark initial load as complete if we're not loading
-      if (!isLoading && !initialLoadComplete) {
-        setInitialLoadComplete(true);
-      }
-    };
-    
-    checkAuth();
-  }, [currentUser, isLoading, navigate, initialLoadComplete]);
+  // Since the route is now protected by ProtectedRoute,
+  // we don't need additional useEffect for redirection
   
   const handleLogout = async () => {
     try {
@@ -68,6 +33,7 @@ const ProfilePage = () => {
     }
   };
   
+  // Show loading indicator while auth state is being determined
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -77,16 +43,17 @@ const ProfilePage = () => {
     );
   }
   
-  // If not loading and no user, we should be redirected by the useEffect
+  // If still don't have user after loading is complete, show error
   if (!currentUser) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Перенаправление...</p>
+        <p className="text-lg mb-4">Ошибка загрузки профиля</p>
+        <Button onClick={() => navigate("/login")}>Войти</Button>
       </div>
     );
   }
   
+  // Now we can safely render the profile content
   // Filter bookings by status
   const activeBookings = bookings.filter(booking => booking.status === 'BOOKED');
   const completedBookings = bookings.filter(booking => booking.status === 'COMPLETED');
