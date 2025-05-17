@@ -1,49 +1,76 @@
-import { createClient } from '@supabase/supabase-js'
-import { Database } from '../types/supabase'
 
-// Ensuring correct URLs for Supabase
+import { createClient } from '@supabase/supabase-js'
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: {
+          id: string
+          name: string
+          email: string | null
+          phone: string | null
+          role: string
+          created_at: string
+          profile_image: string | null
+          subscription_id: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          email?: string | null
+          phone?: string | null
+          role?: string
+          created_at?: string
+          profile_image?: string | null
+          subscription_id?: string | null
+        }
+        Update: Partial<Database["public"]["Tables"]["users"]["Insert"]>
+      }
+      // другие таблицы можно подключить при необходимости
+    }
+  }
+}
+
+// Supabase client
 const supabaseUrl = 'https://czwwnegeanikobvdndnx.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6d3duZWdlYW5pa29idmRuZG54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc0MjQ4MTUsImV4cCI6MjA2MzAwMDgxNX0.ie8SNrBRKSlfez--tmrsMV4QgznpdxjYEnKTX59Yedc'
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
-// Helper functions for common Supabase operations
-
-// Increment the booked count for a class
-export const incrementBookedCount = async (classId: string) => {
-  const { error } = await supabase.rpc('increment_booked_count', { class_id: classId })
-  if (error) console.error('Error incrementing booked count:', error)
+// Типизированный пользователь
+export type SupabaseUser = {
+  id: string
+  name: string
+  email: string
+  phone: string
+  role: string
+  createdAt: string
+  profileImage: string
+  subscriptionId: string | null
 }
 
-// Decrement the booked count for a class
-export const decrementBookedCount = async (classId: string) => {
-  const { error } = await supabase.rpc('decrement_booked_count', { class_id: classId })
-  if (error) console.error('Error decrementing booked count:', error)
-}
+// Получение текущей сессии и пользователя
+export const getCurrentUser = async (): Promise<SupabaseUser | null> => {
+  const { data: { session }, error } = await supabase.auth.getSession()
+  if (error || !session) return null
 
-// Check if a user is authenticated
-export const isAuthenticated = async () => {
-  const { data, error } = await supabase.auth.getSession()
-  return data.session !== null && !error
-}
-
-// Get current user data
-export const getCurrentUser = async () => {
-  const { data: authData } = await supabase.auth.getSession()
-  
-  if (!authData.session) return null
-  
-  const { data, error } = await supabase
+  const { data, error: userError } = await supabase
     .from('users')
     .select('*')
-    .eq('id', authData.session.user.id)
+    .eq('id', session.user.id)
     .single()
-    
-  if (error) {
-    console.error('Error fetching user data:', error)
-    return null
-  }
-  
+
+  if (userError || !data) return null
+
   return {
     id: data.id,
     name: data.name || '',
@@ -51,29 +78,13 @@ export const getCurrentUser = async () => {
     phone: data.phone || '',
     role: data.role,
     createdAt: data.created_at,
-    profileImage: data.profile_image || '/placeholder.svg'
+    profileImage: data.profile_image || '/placeholder.svg',
+    subscriptionId: data.subscription_id
   }
 }
 
-// SQL to be executed on Supabase:
-/*
--- Create stored procedure to increment booked_count
-CREATE OR REPLACE FUNCTION increment_booked_count(class_id UUID)
-RETURNS void AS $$
-BEGIN
-  UPDATE classes 
-  SET booked_count = booked_count + 1
-  WHERE id = class_id;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create stored procedure to decrement booked_count
-CREATE OR REPLACE FUNCTION decrement_booked_count(class_id UUID)
-RETURNS void AS $$
-BEGIN
-  UPDATE classes 
-  SET booked_count = GREATEST(0, booked_count - 1)
-  WHERE id = class_id;
-END;
-$$ LANGUAGE plpgsql;
-*/
+// Проверка авторизован ли пользователь
+export const isAuthenticated = async (): Promise<boolean> => {
+  const { data, error } = await supabase.auth.getSession()
+  return !!data.session && !error
+}
