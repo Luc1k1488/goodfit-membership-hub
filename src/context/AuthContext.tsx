@@ -171,9 +171,9 @@ useEffect(() => {
       if (authListener && authListener.subscription) {
         authListener.subscription.unsubscribe();
       }
-      clearInterval(sessionCheckInterval);
-    };
-  }, [currentUser]) // Add currentUser as dependency to detect session changes
+     clearInterval(sessionCheckInterval);
+  };
+}, [currentUser]); // Add currentUser as dependency to detect session changes
 
   const login = async (contact: string): Promise<void> => {
     setIsLoading(true);
