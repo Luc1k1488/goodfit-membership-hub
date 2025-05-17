@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -10,7 +9,7 @@ import { Header } from "@/components/Header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, Loader2, AlertCircle, Mail, Phone } from "lucide-react";
-import { isEmail } from "@/services/authService";
+import { isEmail } from "@/services/auth";
 
 const LoginPage = () => {
   const [contact, setContact] = useState("");

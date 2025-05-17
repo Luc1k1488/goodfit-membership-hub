@@ -11,7 +11,7 @@ import {
   getCurrentUserSession,
   formatPhoneNumber,
   isEmail
-} from "@/services/authService";
+} from "@/services/auth";
 import AuthContext from "./AuthContext";
 
 interface AuthProviderProps {

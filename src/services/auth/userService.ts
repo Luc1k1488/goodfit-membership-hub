@@ -1,110 +1,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { User } from "@/types";
-import { toast } from "sonner";
-
-// Helper function to check if input is an email or phone number
-export const isEmail = (input: string): boolean => {
-  return input && typeof input === 'string' && input.includes('@');
-};
-
-// Функция для форматирования телефонного номера в формат E.164
-export const formatPhoneNumber = (phone: string): string => {
-  if (!phone) return '';
-  
-  // Удаляем все нецифровые символы
-  const digits = phone.replace(/\D/g, '');
-  
-  // Проверяем начало номера и форматируем для России
-  if (digits.startsWith('7') || digits.startsWith('8')) {
-    return `+7${digits.substring(1)}`;
-  } else if (!digits.startsWith('+')) {
-    return `+7${digits}`;
-  }
-  
-  return phone;
-};
-
-// Функция для отправки OTP на телефон или email
-export const sendOTP = async (contact: string): Promise<void> => {
-  if (!contact) {
-    throw new Error('Контактные данные не указаны');
-  }
-  
-  try {
-    if (isEmail(contact)) {
-      console.log("Sending OTP to email:", contact);
-      const { error } = await supabase.auth.signInWithOtp({
-        email: contact,
-      });
-      
-      if (error) {
-        console.error("SignInWithOtp error:", error);
-        throw error;
-      }
-    } else {
-      const formattedPhone = formatPhoneNumber(contact);
-      console.log("Sending OTP to phone:", formattedPhone);
-      
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: formattedPhone,
-      });
-
-      if (error) {
-        console.error("SignInWithOtp error:", error);
-        throw error;
-      }
-    }
-  } catch (error) {
-    console.error("OTP sending error:", error);
-    throw error;
-  }
-};
-
-// Функция для проверки OTP кода
-export const verifyOTPCode = async (contact: string, otp: string): Promise<any> => {
-  if (!contact || !otp) {
-    throw new Error('Контактные данные или код не указаны');
-  }
-  
-  try {
-    let verifyOptions;
-    
-    if (isEmail(contact)) {
-      console.log("Verifying OTP for email:", contact);
-      verifyOptions = {
-        email: contact,
-        token: otp,
-        type: 'email' as const
-      };
-    } else {
-      const formattedPhone = formatPhoneNumber(contact);
-      console.log("Verifying OTP for phone:", formattedPhone);
-      verifyOptions = {
-        phone: formattedPhone,
-        token: otp,
-        type: 'sms' as const
-      };
-    }
-    
-    const { data, error } = await supabase.auth.verifyOtp(verifyOptions);
-
-    if (error) {
-      console.error("OTP verification error:", error);
-      throw error;
-    }
-
-    if (!data.user) {
-      throw new Error('Пользователь не найден');
-    }
-
-    console.log("OTP verification successful:", data.user);
-    return data.user;
-  } catch (error) {
-    console.error("Verification error:", error);
-    throw error;
-  }
-};
+import { isEmail, formatPhoneNumber } from "./formatUtils";
 
 // Функция для создания или получения пользователя из базы данных
 export const getUserOrCreate = async (userId: string, userData: {
@@ -249,22 +146,6 @@ export const getUserOrCreate = async (userId: string, userData: {
     return user;
   } catch (error) {
     console.error("Error in getUserOrCreate:", error);
-    throw error;
-  }
-};
-
-// Функция для выхода из системы
-export const logoutUser = async (): Promise<void> => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
-      throw error;
-    }
-    
-    toast.info('Вы вышли из системы');
-  } catch (error) {
-    console.error("Logout error:", error);
     throw error;
   }
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,7 +8,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Header } from "@/components/Header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChevronLeft, Loader2, AlertCircle } from "lucide-react";
-import { isEmail } from "@/services/authService";
+import { isEmail } from "@/services/auth";
 
 const VerifyCodePage = () => {
   const [otp, setOtp] = useState("");
