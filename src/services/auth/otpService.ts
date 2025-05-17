@@ -8,14 +8,17 @@ export const sendOTP = async (contact: string): Promise<void> => {
   if (!contact) {
     throw new Error('Контактные данные не указаны');
   }
-  
+
   try {
     if (isEmail(contact)) {
       console.log("Sending OTP to email:", contact);
       const { error } = await supabase.auth.signInWithOtp({
         email: contact,
+        options: {
+          emailRedirectTo: "https://goodfit-membership-hub.vercel.app/verify-code",
+        },
       });
-      
+
       if (error) {
         console.error("SignInWithOtp error:", error);
         throw error;
@@ -23,9 +26,12 @@ export const sendOTP = async (contact: string): Promise<void> => {
     } else {
       const formattedPhone = formatPhoneNumber(contact);
       console.log("Sending OTP to phone:", formattedPhone);
-      
+
       const { error } = await supabase.auth.signInWithOtp({
         phone: formattedPhone,
+        options: {
+          redirectTo: "https://goodfit-membership-hub.vercel.app/verify-code",
+        },
       });
 
       if (error) {
