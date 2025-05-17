@@ -65,8 +65,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setCurrentUser(null);
         setUserRole(null);
       } finally {
-        setIsLoading(false);
-        setAuthInitialized(true);
+        // Add a delay before setting isLoading to false to ensure state updates are consistent
+        setTimeout(() => {
+          setIsLoading(false);
+          setAuthInitialized(true);
+        }, 500);
       }
     };
 
@@ -101,16 +104,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setCurrentUser(null);
             setUserRole(null);
           } finally {
-            setIsLoading(false);
-            setAuthInitialized(true);
+            // Add delay to ensure state updates are processed
+            setTimeout(() => {
+              setIsLoading(false);
+              setAuthInitialized(true);
+            }, 500);
           }
         }
       } else if (event === 'SIGNED_OUT') {
         console.log("User signed out");
         setCurrentUser(null);
         setUserRole(null);
-        setIsLoading(false);
-        setAuthInitialized(true);
+        
+        // Add delay to ensure state updates are processed
+        setTimeout(() => {
+          setIsLoading(false);
+          setAuthInitialized(true);
+        }, 300);
       }
     });
 

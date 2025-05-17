@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,12 +42,8 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  // Don't render anything until we're sure about the auth state
+  // Always show loader while loading - this ensures routes are protected during authentication check
   if (isLoading) {
-    if (!showLoader) {
-      return null; // Don't show anything initially
-    }
-    
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
@@ -80,8 +77,22 @@ const AppRoutes = () => {
       <Route path="/" element={<Navigate to="/gyms" replace />} />
       <Route path="/gyms" element={<GymsPage />} />
       <Route path="/gyms/:id" element={<GymDetailPage />} />
-      <Route path="/classes" element={<ClassesPage />} />
-      <Route path="/booking/:gymId/:classId" element={<BookingPage />} />
+      <Route 
+        path="/classes" 
+        element={
+          <ProtectedRoute>
+            <ClassesPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/booking/:gymId/:classId" 
+        element={
+          <ProtectedRoute>
+            <BookingPage />
+          </ProtectedRoute>
+        } 
+      />
       <Route path="/subscriptions" element={<SubscriptionsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />

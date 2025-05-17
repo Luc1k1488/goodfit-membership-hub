@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,14 +20,8 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState<string>("bookings");
   const navigate = useNavigate();
   
-  // Monitor auth status and redirect if not authenticated
-  useEffect(() => {
-    if (!isLoading && !currentUser) {
-      console.log("User not authenticated, redirecting to login");
-      toast.error("Необходимо войти в систему");
-      navigate("/login");
-    }
-  }, [currentUser, isLoading, navigate]);
+  // Since the route is now protected by ProtectedRoute,
+  // we don't need additional useEffect for redirection
   
   const handleLogout = async () => {
     try {
@@ -49,12 +43,12 @@ const ProfilePage = () => {
     );
   }
   
-  // If auth check is complete and no user, let the useEffect handle redirect
+  // If still don't have user after loading is complete, show error
   if (!currentUser) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Перенаправление на страницу входа...</p>
+        <p className="text-lg mb-4">Ошибка загрузки профиля</p>
+        <Button onClick={() => navigate("/login")}>Войти</Button>
       </div>
     );
   }

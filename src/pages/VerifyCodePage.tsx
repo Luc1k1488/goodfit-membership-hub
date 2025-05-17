@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,6 +18,7 @@ const VerifyCodePage = () => {
   const [isRegistration, setIsRegistration] = useState(false);
   const [error, setError] = useState("");
   const [contactType, setContactType] = useState<"phone" | "email">("phone");
+  const [validateInProgress, setValidateInProgress] = useState(true);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,6 +27,7 @@ const VerifyCodePage = () => {
   useEffect(() => {
     // Clear any previous errors
     setError("");
+    setValidateInProgress(true);
     
     // Extract state from location or URL parameters
     const extractStateData = () => {
@@ -74,6 +75,7 @@ const VerifyCodePage = () => {
           setName(pendingName);
         }
       }
+      setValidateInProgress(false);
     } else {
       console.log("No contact information provided, redirecting to login");
       toast.error("Контактные данные не указаны");
@@ -83,6 +85,19 @@ const VerifyCodePage = () => {
 
   const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (validateInProgress) {
+      setError("Валидация данных, пожалуйста подождите");
+      return;
+    }
+
+    if (!contact) {
+      setError("Контактные данные не указаны");
+      toast.error("Ошибка: контактные данные не указаны");
+      setTimeout(() => navigate("/login"), 1500);
+      return;
+    }
+    
     if (!otp || otp.length < 6) {
       setError("Пожалуйста, введите полный код подтверждения");
       return;
@@ -119,11 +134,17 @@ const VerifyCodePage = () => {
   };
 
   const handleResendCode = async () => {
+    if (!contact) {
+      setError("Контактные данные не указаны");
+      toast.error("Ошибка: контактные данные не указаны");
+      return;
+    }
+
     setIsSubmitting(true);
     setError("");
 
     try {
-      if (isRegistration) {
+      if (isRegistration && name) {
         await register(name, contact);
       } else {
         await login(contact);
@@ -137,6 +158,15 @@ const VerifyCodePage = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (validateInProgress) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-lg">Загрузка...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
