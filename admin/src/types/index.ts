@@ -34,6 +34,7 @@ export interface Gym {
     open: string;
     close: string;
   };
+  features?: string[];
 }
 
 // Class and schedule types

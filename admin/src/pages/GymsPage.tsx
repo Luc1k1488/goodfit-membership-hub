@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -106,13 +107,13 @@ const GymsPage = () => {
         address: gymAddress,
         category: ["Тренажерный зал"],
         location: { lat: 0, lng: 0 }, // Default location
-        main_image: "https://via.placeholder.com/300x200?text=GoodFit", // Changed from mainImage
+        main_image: "https://via.placeholder.com/300x200?text=GoodFit",
         images: ["https://via.placeholder.com/300x200?text=GoodFit"],
-        ownerid: currentUser?.id, // Changed from ownerId
+        ownerid: currentUser?.id,
         rating: 0,
-        review_count: 0, // Changed from reviewCount
+        review_count: 0,
         features: [],
-        working_hours: { open: "09:00", close: "21:00" } // Changed from workingHours
+        working_hours: { open: "09:00", close: "21:00" }
       };
       
       const { data, error } = await supabase

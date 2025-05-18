@@ -76,9 +76,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         email: userData.email || '',
         phone: userData.phone || '',
         role: (userData.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
-        createdAt: userData.created_at,
-        profileImage: userData.profile_image || '/placeholder.svg',
-        subscriptionId: userData.subscription_id || null
+        created_at: userData.created_at,
+        profile_image: userData.profile_image || '/placeholder.svg',
+        subscription_id: userData.subscription_id || null
       };
       
       setCurrentUser(user);

@@ -48,7 +48,7 @@ export interface Gym {
     open: string;
     close: string;
   };
-  features?: string[]; // Добавляем поле features, которое указано в коде
+  features?: string[];
 }
 
 // Class and schedule types

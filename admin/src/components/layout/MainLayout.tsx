@@ -133,9 +133,9 @@ export function MainLayout() {
           <div className="flex items-center">
             <div className="relative">
               <Button variant="ghost" className="flex items-center">
-                {currentUser?.profileImage ? (
+                {currentUser?.profile_image ? (
                   <img 
-                    src={currentUser.profileImage} 
+                    src={currentUser.profile_image} 
                     alt={currentUser.name} 
                     className="w-8 h-8 rounded-full mr-2" 
                   />
