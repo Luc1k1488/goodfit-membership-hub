@@ -8,9 +8,9 @@ export interface User {
   phone: string;
   email?: string;
   role: UserRole;
-  subscription_id?: string; // Changed from subscriptionId
-  created_at: string; // Changed from createdAt
-  profile_image?: string; // Changed from profileImage
+  subscription_id?: string;
+  created_at: string;
+  profile_image?: string;
 }
 
 export interface UserProfile extends User {
@@ -39,13 +39,12 @@ export interface Gym {
     lat: number;
     lng: number;
   };
-  main_image: string; // Changed from mainImage
+  main_image: string;
   images: string[];
-  ownerid: string; // Confirmed as ownerid to match DB
+  ownerid: string;
   rating: number;
-  review_count: number; // Changed from reviewCount
-  features: string[];
-  working_hours: { // Changed from workingHours
+  review_count: number;
+  working_hours: {
     open: string;
     close: string;
   };
@@ -54,26 +53,26 @@ export interface Gym {
 // Class and schedule types
 export interface FitnessClass {
   id: string;
-  gymid: string; // Changed from gymId to match DB
+  gymid: string;
   title: string;
   description: string;
   instructor: string;
-  starttime: string; // Changed from startTime to match DB
-  end_time: string; // Changed from endTime
+  starttime: string;
+  end_time: string;
   capacity: number;
-  booked_count: number; // Changed from bookedCount
+  booked_count: number;
   category: string;
 }
 
 // Booking types
 export interface Booking {
   id: string;
-  user_id: string; // Confirmed as user_id to match DB
-  class_id: string; // Confirmed as class_id to match DB
-  gym_id: string; // Changed from gymId
+  user_id: string;
+  class_id: string;
+  gym_id: string;
   status: 'BOOKED' | 'COMPLETED' | 'CANCELLED';
-  date_time: string; // Confirmed as date_time to match DB
-  created_at?: string; // Changed from createdAt
+  date_time: string;
+  created_at?: string;
   className?: string;
   gymName?: string;
   userName?: string;
@@ -82,15 +81,15 @@ export interface Booking {
     id: string;
     name: string;
     city: string;
-    main_image: string; // Changed from mainImage
+    main_image: string;
   };
 }
 
 // Review types
 export interface Review {
   id: string;
-  user_id: string; // Changed from userId
-  gym_id: string; // Changed from gymId
+  user_id: string;
+  gym_id: string;
   userName: string;
   rating: number;
   comment: string;

@@ -19,9 +19,9 @@ type AppContextType = {
   bookClass: (classId: string, gymId: string) => Promise<boolean>;
   getUserBookings: () => Promise<Booking[]>;
   cancelBooking: (bookingId: string) => Promise<boolean>;
-  addGym: (gym: Omit<Gym, "id" | "rating" | "reviewCount">) => Promise<Gym>;
+  addGym: (gym: Omit<Gym, "id" | "rating" | "review_count">) => Promise<Gym>;
   updateGym: (id: string, updates: Partial<Gym>) => Promise<Gym>;
-  addClass: (classData: Omit<FitnessClass, "id" | "bookedCount">) => Promise<FitnessClass>;
+  addClass: (classData: Omit<FitnessClass, "id" | "booked_count">) => Promise<FitnessClass>;
   updateClass: (id: string, updates: Partial<FitnessClass>) => Promise<FitnessClass>;
   deleteClass: (id: string) => Promise<boolean>;
 };
@@ -66,14 +66,14 @@ export const AppProvider = ({ children }: AppProviderProps) => {
           description: gym.description,
           address: gym.address,
           city: gym.city,
-          mainImage: gym.main_image,
+          main_image: gym.main_image,
           images: gym.images,
           features: gym.features,
           category: gym.category,
           location: { lat: gym.location?.lat || 0, lng: gym.location?.lng || 0 },
-          workingHours: gym.working_hours,
+          working_hours: gym.working_hours,
           rating: gym.rating,
-          reviewCount: gym.review_count,
+          review_count: gym.review_count,
           ownerid: gym.ownerid
         }));
         setGyms(formattedGyms);
@@ -92,15 +92,15 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       } else if (classesData) {
         const formattedClasses: FitnessClass[] = classesData.map(cls => ({
           id: cls.id,
-          gymId: cls.gymid,
+          gymid: cls.gymid,
           title: cls.name,
           description: cls.description,
           instructor: cls.instructor,
-          startTime: cls.starttime,
-          endTime: cls.end_time,
+          starttime: cls.starttime,
+          end_time: cls.end_time,
           category: cls.category,
           capacity: cls.capacity,
-          bookedCount: cls.booked_count
+          booked_count: cls.booked_count
         }));
         setClasses(formattedClasses);
       }
@@ -159,15 +159,15 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     
     return data.map(cls => ({
       id: cls.id,
-      gymId: cls.gymid,
+      gymid: cls.gymid,
       title: cls.name,
       description: cls.description,
       instructor: cls.instructor,
-      startTime: cls.starttime,
-      endTime: cls.end_time,
+      starttime: cls.starttime,
+      end_time: cls.end_time,
       category: cls.category,
       capacity: cls.capacity,
-      bookedCount: cls.booked_count
+      booked_count: cls.booked_count
     }));
   };
 
@@ -259,7 +259,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       setClasses(prevClasses => 
         prevClasses.map(cls => 
           cls.id === classId 
-            ? { ...cls, bookedCount: cls.bookedCount + 1 } 
+            ? { ...cls, booked_count: cls.booked_count + 1 } 
             : cls
         )
       );
@@ -298,31 +298,31 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       
       const formattedBookings: Booking[] = data.map(booking => ({
         id: booking.id,
-        userId: booking.user_id,
-        classId: booking.class_id,
-        gymId: booking.gym_id,
+        user_id: booking.user_id,
+        class_id: booking.class_id,
+        gym_id: booking.gym_id,
         status: booking.status,
-        dateTime: booking.date_time,
-        createdAt: booking.created_at,
+        date_time: booking.date_time,
+        created_at: booking.created_at,
         className: booking.classes.name,
         gymName: booking.gyms.name,
         class: {
           id: booking.classes.id,
-          gymId: booking.classes.gymid,
+          gymid: booking.classes.gymid,
           title: booking.classes.name,
           description: booking.classes.description,
           instructor: booking.classes.instructor,
-          startTime: booking.classes.starttime,
-          endTime: booking.classes.end_time,
+          starttime: booking.classes.starttime,
+          end_time: booking.classes.end_time,
           category: booking.classes.category,
           capacity: booking.classes.capacity,
-          bookedCount: booking.classes.booked_count
+          booked_count: booking.classes.booked_count
         },
         gym: {
           id: booking.gyms.id,
           name: booking.gyms.name,
           city: booking.gyms.city,
-          mainImage: booking.gyms.main_image
+          main_image: booking.gyms.main_image
         }
       }));
       
@@ -374,7 +374,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       setClasses(prevClasses => 
         prevClasses.map(cls => 
           cls.id === bookingData.class_id 
-            ? { ...cls, bookedCount: Math.max(0, cls.bookedCount - 1) } 
+            ? { ...cls, booked_count: Math.max(0, cls.booked_count - 1) } 
             : cls
         )
       );
@@ -388,7 +388,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     }
   };
 
-  const addGym = async (gym: Omit<Gym, "id" | "rating" | "reviewCount">): Promise<Gym> => {
+  const addGym = async (gym: Omit<Gym, "id" | "rating" | "review_count">): Promise<Gym> => {
     if (!currentUser || currentUser.role !== "PARTNER") {
       throw new Error("Недостаточно прав для добавления зала");
     }
@@ -402,11 +402,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
             description: gym.description,
             address: gym.address,
             city: gym.city,
-            main_image: gym.mainImage,
+            main_image: gym.main_image,
             images: gym.images,
             features: gym.features,
             category: gym.category,
-            working_hours: gym.workingHours,
+            working_hours: gym.working_hours,
             rating: 0,
             review_count: 0,
             ownerid: currentUser.id
@@ -426,14 +426,14 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         description: data.description,
         address: data.address,
         city: data.city,
-        mainImage: data.main_image,
+        main_image: data.main_image,
         images: data.images,
         features: data.features,
         category: data.category,
         location: { lat: 0, lng: 0 }, // Default location
-        workingHours: data.working_hours,
+        working_hours: data.working_hours,
         rating: data.rating,
-        reviewCount: data.review_count,
+        review_count: data.review_count,
         ownerid: data.ownerid
       };
       
@@ -473,11 +473,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       if ('description' in updates) dbUpdates.description = updates.description;
       if ('address' in updates) dbUpdates.address = updates.address;
       if ('city' in updates) dbUpdates.city = updates.city;
-      if ('mainImage' in updates) dbUpdates.main_image = updates.mainImage;
+      if ('main_image' in updates) dbUpdates.main_image = updates.main_image;
       if ('images' in updates) dbUpdates.images = updates.images;
       if ('features' in updates) dbUpdates.features = updates.features;
       if ('category' in updates) dbUpdates.category = updates.category;
-      if ('workingHours' in updates) dbUpdates.working_hours = updates.workingHours;
+      if ('working_hours' in updates) dbUpdates.working_hours = updates.working_hours;
       
       const { data, error } = await supabase
         .from('gyms')
@@ -514,8 +514,8 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     }
   };
 
-  const addClass = async (classData: Omit<FitnessClass, "id" | "bookedCount">): Promise<FitnessClass> => {
-    const gym = gyms.find(g => g.id === classData.gymId);
+  const addClass = async (classData: Omit<FitnessClass, "id" | "booked_count">): Promise<FitnessClass> => {
+    const gym = gyms.find(g => g.id === classData.gymid);
     
     if (!gym) {
       throw new Error("Зал не найден");
@@ -534,12 +534,12 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         .from('classes')
         .insert([
           {
-            gymid: classData.gymId,
+            gymid: classData.gymid,
             name: classData.title,
             description: classData.description,
             instructor: classData.instructor,
-            starttime: classData.startTime,
-            end_time: classData.endTime,
+            starttime: classData.starttime,
+            end_time: classData.end_time,
             category: classData.category,
             capacity: classData.capacity,
             booked_count: 0
@@ -555,15 +555,15 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       
       const newClass: FitnessClass = {
         id: data.id,
-        gymId: data.gymid,
+        gymid: data.gymid,
         title: data.name,
         description: data.description,
         instructor: data.instructor,
-        startTime: data.starttime,
-        endTime: data.end_time,
+        starttime: data.starttime,
+        end_time: data.end_time,
         category: data.category,
         capacity: data.capacity,
-        bookedCount: data.booked_count
+        booked_count: data.booked_count
       };
       
       // Update local state
@@ -585,7 +585,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       throw new Error("Занятие не найдено");
     }
     
-    const gym = gyms.find(g => g.id === cls.gymId);
+    const gym = gyms.find(g => g.id === cls.gymid);
     
     if (!gym) {
       throw new Error("Зал не найден");
@@ -606,8 +606,8 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       if ('title' in updates) dbUpdates.name = updates.title;
       if ('description' in updates) dbUpdates.description = updates.description;
       if ('instructor' in updates) dbUpdates.instructor = updates.instructor;
-      if ('startTime' in updates) dbUpdates.starttime = updates.startTime;
-      if ('endTime' in updates) dbUpdates.end_time = updates.endTime;
+      if ('starttime' in updates) dbUpdates.starttime = updates.starttime;
+      if ('end_time' in updates) dbUpdates.end_time = updates.end_time;
       if ('category' in updates) dbUpdates.category = updates.category;
       if ('capacity' in updates) dbUpdates.capacity = updates.capacity;
       
@@ -649,7 +649,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       throw new Error("Занятие не найдено");
     }
     
-    const gym = gyms.find(g => g.id === cls.gymId);
+    const gym = gyms.find(g => g.id === cls.gymid);
     
     if (!gym) {
       throw new Error("Зал не найден");

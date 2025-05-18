@@ -8,9 +8,9 @@ export interface User {
   phone: string;
   email?: string;
   role: UserRole;
-  subscription_id?: string; // Changed from subscriptionId
-  created_at: string; // Changed from createdAt
-  profile_image?: string; // Changed from profileImage
+  subscription_id?: string;
+  created_at: string;
+  profile_image?: string;
 }
 
 // Gym and fitness center types
@@ -25,13 +25,12 @@ export interface Gym {
     lat: number;
     lng: number;
   };
-  main_image: string; // Changed from mainImage
+  main_image: string;
   images: string[];
-  ownerid: string; // Confirmed as ownerid
+  ownerid: string;
   rating: number;
-  review_count: number; // Changed from reviewCount
-  features: string[];
-  working_hours: { // Changed from workingHours
+  review_count: number;
+  working_hours: {
     open: string;
     close: string;
   };
@@ -40,26 +39,26 @@ export interface Gym {
 // Class and schedule types
 export interface FitnessClass {
   id: string;
-  gymid: string; // Changed from gymId
+  gymid: string;
   title: string;
   description: string;
   instructor: string;
-  starttime: string; // Changed from startTime
-  end_time: string; // Changed from endTime
+  starttime: string;
+  end_time: string;
   capacity: number;
-  booked_count: number; // Changed from bookedCount
+  booked_count: number;
   category: string;
 }
 
 // Booking types
 export interface Booking {
   id: string;
-  user_id: string; // Confirmed as user_id
-  class_id: string; // Confirmed as class_id
-  gym_id: string; // Changed from gymId
+  user_id: string;
+  class_id: string;
+  gym_id: string;
   status: 'BOOKED' | 'COMPLETED' | 'CANCELLED';
-  date_time: string; // Confirmed as date_time
-  created_at?: string; // Changed from createdAt
+  date_time: string;
+  created_at?: string;
   className?: string;
   gymName?: string;
   userName?: string;
@@ -68,7 +67,7 @@ export interface Booking {
     id: string;
     name: string;
     city: string;
-    main_image: string; // Changed from mainImage
+    main_image: string;
   };
 }
 

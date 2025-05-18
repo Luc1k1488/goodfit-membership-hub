@@ -15,7 +15,7 @@ export function GymCard({ gym }: GymCardProps) {
       <Card className="overflow-hidden transition-all hover:shadow-lg rounded-xl">
         <div className="relative aspect-video overflow-hidden">
           <img
-            src={gym.mainImage}
+            src={gym.main_image}
             alt={gym.name}
             className="object-cover w-full h-full transition-transform hover:scale-105"
           />
@@ -42,10 +42,10 @@ export function GymCard({ gym }: GymCardProps) {
         </CardContent>
         <CardFooter className="px-4 py-3 border-t flex justify-between">
           <div className="text-sm text-gray-500">
-            {gym.workingHours?.open} - {gym.workingHours?.close}
+            {gym.working_hours?.open} - {gym.working_hours?.close}
           </div>
           <div className="text-sm text-gray-500">
-            {gym.reviewCount} отзывов
+            {gym.review_count} отзывов
           </div>
         </CardFooter>
       </Card>

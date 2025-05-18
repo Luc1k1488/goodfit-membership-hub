@@ -17,18 +17,18 @@ interface ClassCardProps {
 export function ClassCard({ fitnessClass, gym, showBookButton = true }: ClassCardProps) {
   const { bookClass, user } = useApp();
   
-  const startTime = parseISO(fitnessClass.startTime);
-  const endTime = parseISO(fitnessClass.endTime);
+  const startTime = parseISO(fitnessClass.starttime);
+  const endTime = parseISO(fitnessClass.end_time);
   
   const formattedDate = format(startTime, "EEEE, d MMMM", { locale: ru });
   const formattedTime = `${format(startTime, "HH:mm")} - ${format(endTime, "HH:mm")}`;
   
-  const isFullyBooked = fitnessClass.bookedCount >= fitnessClass.capacity;
-  const spacesLeft = fitnessClass.capacity - fitnessClass.bookedCount;
+  const isFullyBooked = fitnessClass.booked_count >= fitnessClass.capacity;
+  const spacesLeft = fitnessClass.capacity - fitnessClass.booked_count;
   
   const handleBookClass = async () => {
     if (user) {
-      await bookClass(fitnessClass.id, fitnessClass.gymId);
+      await bookClass(fitnessClass.id, fitnessClass.gymid);
     }
   };
   
