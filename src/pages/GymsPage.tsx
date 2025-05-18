@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Gym } from "@/types";
+import { Gym, GymFilters } from "@/types";
 import { GymCard } from "@/components/GymCard";
 import { CityFilter } from "@/components/CityFilter";
 import { SearchFilter } from "@/components/SearchFilter";
@@ -12,22 +12,49 @@ import { useApp } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 
 const GymsPage = () => {
-  const { filterGyms, filteredGyms, gyms } = useApp();
+  const { gyms } = useApp();
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [minRating, setMinRating] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [filteredGyms, setFilteredGyms] = useState<Gym[]>([]);
   const navigate = useNavigate();
   
   useEffect(() => {
     // Apply filters
-    filterGyms({
-      city: selectedCity,
-      category: selectedCategories.length > 0 ? selectedCategories : undefined,
-      search: searchQuery,
-    });
-  }, [selectedCity, selectedCategories, minRating, searchQuery, filterGyms]);
+    let filtered = [...gyms];
+    
+    // City filter
+    if (selectedCity) {
+      filtered = filtered.filter((gym) => gym.city === selectedCity);
+    }
+    
+    // Category filter
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter((gym) => 
+        gym.category.some(cat => selectedCategories.includes(cat))
+      );
+    }
+    
+    // Rating filter
+    if (minRating > 0) {
+      filtered = filtered.filter((gym) => gym.rating >= minRating);
+    }
+    
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (gym) =>
+          gym.name.toLowerCase().includes(query) ||
+          gym.address.toLowerCase().includes(query) ||
+          gym.category.some((cat) => cat.toLowerCase().includes(query))
+      );
+    }
+    
+    setFilteredGyms(filtered);
+  }, [gyms, selectedCity, selectedCategories, minRating, searchQuery]);
 
   const uniqueCities = [...new Set(gyms.map((gym) => gym.city))].sort();
   const uniqueCategories = [...new Set(gyms.flatMap((gym) => gym.category))].sort();
@@ -62,9 +89,9 @@ const GymsPage = () => {
       <div>
         <h3 className="text-lg font-medium mb-2">Поиск</h3>
         <SearchFilter 
-          onSearch={handleSearchChange} 
+          value={searchQuery}
+          onChange={handleSearchChange}
           placeholder="Название, адрес..." 
-          initialValue={searchQuery}
         />
       </div>
       
@@ -72,8 +99,8 @@ const GymsPage = () => {
         <h3 className="text-lg font-medium mb-2">Город</h3>
         <CityFilter 
           cities={uniqueCities} 
-          onCityChange={handleCityChange} 
           activeCity={selectedCity}
+          onCityChange={handleCityChange} 
         />
       </div>
       
@@ -89,8 +116,8 @@ const GymsPage = () => {
       <div>
         <h3 className="text-lg font-medium mb-2">Рейтинг</h3>
         <RatingFilter 
-          onRatingChange={handleRatingChange} 
           initialRating={minRating} 
+          onRatingChange={handleRatingChange} 
         />
       </div>
     </div>

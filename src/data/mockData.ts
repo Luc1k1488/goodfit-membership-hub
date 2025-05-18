@@ -66,7 +66,8 @@ export const MOCK_GYMS: Gym[] = [
     working_hours: {
       open: "07:00",
       close: "23:00"
-    }
+    },
+    features: ["Парковка", "Душевые", "Сауна"]
   },
   {
     id: "gym-2",
@@ -90,7 +91,8 @@ export const MOCK_GYMS: Gym[] = [
     working_hours: {
       open: "08:00",
       close: "22:00"
-    }
+    },
+    features: ["Коврики", "Раздевалки"]
   },
   {
     id: "gym-3",
@@ -115,7 +117,8 @@ export const MOCK_GYMS: Gym[] = [
     working_hours: {
       open: "06:00",
       close: "23:00"
-    }
+    },
+    features: ["Свободные веса", "Тренеры", "Раздевалки"]
   },
   {
     id: "gym-4",
@@ -139,7 +142,8 @@ export const MOCK_GYMS: Gym[] = [
     working_hours: {
       open: "09:00",
       close: "21:00"
-    }
+    },
+    features: ["Коврики", "Блоки", "Раздевалки"]
   },
   {
     id: "gym-5",
@@ -164,7 +168,8 @@ export const MOCK_GYMS: Gym[] = [
     working_hours: {
       open: "07:00",
       close: "22:00"
-    }
+    },
+    features: ["Парковка", "Кафе", "Детская комната"]
   },
   {
     id: "gym-6",
@@ -188,7 +193,8 @@ export const MOCK_GYMS: Gym[] = [
     working_hours: {
       open: "10:00",
       close: "22:00"
-    }
+    },
+    features: ["Зеркала", "Профессиональный паркет"]
   }
 ];
 
@@ -196,7 +202,7 @@ export const MOCK_GYMS: Gym[] = [
 export const MOCK_CLASSES: FitnessClass[] = [
   {
     id: "class-1",
-    gymid: "gym-1",
+    gym_id: "gym-1",
     title: "Функциональный тренинг",
     description: "Высокоинтенсивная тренировка для всего тела",
     instructor: "Иванов Петр",
@@ -208,7 +214,7 @@ export const MOCK_CLASSES: FitnessClass[] = [
   },
   {
     id: "class-2",
-    gymid: "gym-1",
+    gym_id: "gym-1",
     title: "Йога для начинающих",
     description: "Мягкая практика для развития гибкости и баланса",
     instructor: "Сидорова Анна",
@@ -220,7 +226,7 @@ export const MOCK_CLASSES: FitnessClass[] = [
   },
   {
     id: "class-3",
-    gymid: "gym-2",
+    gym_id: "gym-2",
     title: "Пилатес",
     description: "Укрепление мышц кора и улучшение осанки",
     instructor: "Козлова Ольга",
@@ -232,7 +238,7 @@ export const MOCK_CLASSES: FitnessClass[] = [
   },
   {
     id: "class-4",
-    gymid: "gym-3",
+    gym_id: "gym-3",
     title: "Кроссфит",
     description: "Комплексная тренировка на силу и выносливость",
     instructor: "Смирнов Алексей",
@@ -244,7 +250,7 @@ export const MOCK_CLASSES: FitnessClass[] = [
   },
   {
     id: "class-5",
-    gymid: "gym-4",
+    gym_id: "gym-4",
     title: "Медитация",
     description: "Практика осознанности и релаксации",
     instructor: "Морозова Елена",
@@ -256,7 +262,7 @@ export const MOCK_CLASSES: FitnessClass[] = [
   },
   {
     id: "class-6",
-    gymid: "gym-5",
+    gym_id: "gym-5",
     title: "Аквааэробика",
     description: "Эффективная тренировка в воде",
     instructor: "Павлова Светлана",
@@ -268,7 +274,7 @@ export const MOCK_CLASSES: FitnessClass[] = [
   },
   {
     id: "class-7",
-    gymid: "gym-6",
+    gym_id: "gym-6",
     title: "Современные танцы",
     description: "Изучение различных танцевальных стилей",
     instructor: "Андреева Юлия",

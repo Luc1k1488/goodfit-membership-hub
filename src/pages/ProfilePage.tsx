@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Booking } from "@/types";
 import { useApp } from "@/context/AppContext";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/auth";
 
 const ProfilePage = () => {
   const { currentUser, logout } = useAuth();
@@ -28,13 +27,15 @@ const ProfilePage = () => {
   
   useEffect(() => {
     const fetchBookings = async () => {
+      if (!user_id) return;
+      
       setIsLoading(true);
-      await getUserBookings();
+      await getUserBookings(user_id);
       setIsLoading(false);
     };
 
     fetchBookings();
-  }, [getUserBookings]);
+  }, [getUserBookings, user_id]);
   
   const activeBookings = bookings.filter(
     (booking) => booking.status === "BOOKED"
