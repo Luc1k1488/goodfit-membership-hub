@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Subscription } from "@/types";
 import { Check } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/auth";
 import { useNavigate } from "react-router-dom";
 
 interface SubscriptionCardProps {
@@ -13,12 +13,12 @@ interface SubscriptionCardProps {
 }
 
 export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
-  const { currentUser } = useApp();
+  const { currentUser: appUser } = useApp();
   const { currentUser: authUser } = useAuth();
   const navigate = useNavigate();
   
   const handleSubscribe = () => {
-    if (!authUser && !currentUser) {
+    if (!authUser && !appUser) {
       navigate("/login");
       return;
     }

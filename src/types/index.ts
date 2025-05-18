@@ -48,13 +48,13 @@ export interface Gym {
     open: string;
     close: string;
   };
-  features?: string[];
+  features: string[];
 }
 
 // Class and schedule types
 export interface FitnessClass {
   id: string;
-  gymid: string;
+  gym_id: string;
   title: string;
   description: string;
   instructor: string;
@@ -103,5 +103,5 @@ export interface GymFilters {
   city?: string;
   category?: string[];
   rating?: number;
-  search?: string; // Added search property to GymFilters
+  search?: string;
 }

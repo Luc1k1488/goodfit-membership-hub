@@ -1,182 +1,245 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { FitnessClass, Gym, Subscription, User, Booking, GymFilters } from '@/types';
-import { supabase } from '@/lib/supabaseClient';
-import { useAuth } from '@/context/auth';
-import { toast } from 'sonner';
 
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { Gym, FitnessClass, Booking, Review, Subscription, User, GymFilters } from '@/types';
+import { toast } from 'sonner';
+import { useAuth } from './auth';
+
+// Define the context type
 export interface AppContextType {
   gyms: Gym[];
   filteredGyms: Gym[];
-  filterGyms: (filters: GymFilters) => void;
+  selectedGym: Gym | null;
   classes: FitnessClass[];
-  getGymClasses: (gym_id: string) => Promise<FitnessClass[]>;
   bookings: Booking[];
-  bookClass: (class_id: string, gym_id: string) => Promise<boolean>;
-  cancelBooking: (booking_id: string) => Promise<boolean>;
   subscriptions: Subscription[];
-  currentUser: User | null;  // Added currentUser property
-  getUserBookings: () => Promise<Booking[]>; // Added getUserBookings method
+  currentUser: User | null;
+  isLoading: boolean;
+  filters: GymFilters;
+  setFilters: (filters: GymFilters) => void;
+  getGymById: (id: string) => Promise<Gym | null>;
+  getClassById: (id: string) => Promise<FitnessClass | null>;
+  getGymClasses: (gym_id: string) => Promise<FitnessClass[]>;
+  getUserBookings: (user_id: string) => Promise<Booking[]>;
+  bookClass: (class_id: string, gym_id: string) => Promise<boolean>;
+  cancelBooking: (bookingId: string) => Promise<boolean>;
+  addGym: (gym: Omit<Gym, "id">) => Promise<string>;
+  addClass: (fitnessClass: Omit<FitnessClass, "id">) => Promise<string>;
+  updateGym: (id: string, updates: Partial<Gym>) => Promise<boolean>;
+  updateClass: (id: string, updates: Partial<FitnessClass>) => Promise<boolean>;
+  deleteGym: (id: string) => Promise<boolean>;
+  deleteClass: (id: string) => Promise<boolean>;
+  addReview: (review: Omit<Review, "id" | "date">) => Promise<boolean>;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+// Create context with default values
+const AppContext = createContext<AppContextType>({} as AppContextType);
 
-export const AppProvider = ({ children }: { children: ReactNode }) => {
+// Export the useApp hook
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useApp must be used within an AppProvider');
+  }
+  return context;
+};
+
+// AppProvider component
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [gyms, setGyms] = useState<Gym[]>([]);
+  const [filteredGyms, setFilteredGyms] = useState<Gym[]>([]);
+  const [selectedGym, setSelectedGym] = useState<Gym | null>(null);
   const [classes, setClasses] = useState<FitnessClass[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [filteredGyms, setFilteredGyms] = useState<Gym[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState<GymFilters>({});
   
   const { currentUser } = useAuth();
 
+  // Fetch gyms on mount
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchGyms = async () => {
+      setIsLoading(true);
       try {
-        // Fetch gyms
-        const { data: gymsData, error: gymsError } = await supabase
+        const { data, error } = await supabase
           .from('gyms')
           .select('*');
           
-        if (gymsError) {
-          throw gymsError;
-        }
+        if (error) throw error;
         
-        if (gymsData) {
-          setGyms(gymsData);
-          setFilteredGyms(gymsData);
-        }
+        const formattedGyms: Gym[] = data.map(gym => ({
+          id: gym.id,
+          name: gym.name,
+          description: gym.description,
+          category: gym.category,
+          city: gym.city,
+          address: gym.address,
+          location: gym.location,
+          main_image: gym.main_image,
+          images: gym.images,
+          ownerid: gym.ownerid,
+          rating: gym.rating,
+          review_count: gym.review_count,
+          working_hours: gym.working_hours,
+          features: gym.features,
+        }));
         
-        // Fetch classes
-        const { data: classesData, error: classesError } = await supabase
-          .from('classes')
-          .select('*');
-          
-        if (classesError) {
-          throw classesError;
-        }
-        
-        if (classesData) {
-          // Make sure the classes have the correct field names
-          const formattedClasses = classesData.map(cls => ({
-            ...cls,
-            starttime: cls.starttime || cls.start_time,
-            end_time: cls.end_time
-          }));
-          setClasses(formattedClasses);
-        }
-        
-        // Fetch subscriptions
-        const { data: subscriptionsData, error: subscriptionsError } = await supabase
-          .from('subscriptions')
-          .select('*');
-          
-        if (subscriptionsError) {
-          throw subscriptionsError;
-        }
-        
-        if (subscriptionsData) {
-          const formattedSubscriptions = subscriptionsData.map(sub => ({
-            id: sub.id,
-            name: sub.name,
-            durationDays: sub.duration_days,
-            price: sub.price,
-            features: sub.features,
-            isPopular: sub.is_popular
-          }));
-          
-          setSubscriptions(formattedSubscriptions);
-        }
-        
-        // If user is logged in, fetch bookings
-        if (currentUser) {
-          await getUserBookings();
-        }
+        setGyms(formattedGyms);
+        setFilteredGyms(formattedGyms);
       } catch (error) {
-        console.error('Error fetching initial data:', error);
+        console.error('Error fetching gyms:', error);
+        toast.error('Не удалось загрузить список залов');
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    fetchData();
-  }, [currentUser]);
-  
-  const filterGyms = (filters: GymFilters) => {
-    let filtered = gyms;
+    fetchGyms();
+  }, []);
+
+  // Fetch subscriptions on mount
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      try {
+        const { data, error } = await supabase.from('subscriptions').select('*');
+        
+        if (error) throw error;
+        
+        const formattedSubs: Subscription[] = data.map(sub => ({
+          id: sub.id,
+          name: sub.name,
+          price: sub.price,
+          durationDays: sub.duration_days,
+          features: sub.features,
+          isPopular: sub.is_popular,
+        }));
+        
+        setSubscriptions(formattedSubs);
+      } catch (error) {
+        console.error('Error fetching subscriptions:', error);
+        toast.error('Не удалось загрузить список абонементов');
+      }
+    };
     
-    if (filters.city && filters.city !== "") {
+    fetchSubscriptions();
+  }, []);
+
+  // Fetch user bookings when user changes
+  useEffect(() => {
+    if (currentUser) {
+      getUserBookings(currentUser.id);
+    }
+  }, [currentUser]);
+
+  // Apply filters effect
+  useEffect(() => {
+    let filtered = [...gyms];
+    
+    if (filters.city) {
       filtered = filtered.filter(gym => gym.city === filters.city);
     }
     
     if (filters.category && filters.category.length > 0) {
-      filtered = filtered.filter(gym => 
-        filters.category!.some(cat => gym.category.includes(cat))
-      );
+      filtered = filtered.filter(gym => {
+        return gym.category.some(cat => filters.category?.includes(cat));
+      });
     }
     
-    // Add support for search
-    if (filters.search && filters.search !== "") {
-      const searchLower = filters.search.toLowerCase();
+    if (filters.rating) {
+      filtered = filtered.filter(gym => gym.rating >= (filters.rating || 0));
+    }
+    
+    if (filters.search) {
+      const search = filters.search.toLowerCase();
       filtered = filtered.filter(gym => 
-        gym.name.toLowerCase().includes(searchLower) ||
-        gym.address.toLowerCase().includes(searchLower) ||
-        gym.description.toLowerCase().includes(searchLower) ||
-        gym.city.toLowerCase().includes(searchLower)
+        gym.name.toLowerCase().includes(search) || 
+        gym.description.toLowerCase().includes(search) ||
+        gym.city.toLowerCase().includes(search) ||
+        gym.address.toLowerCase().includes(search)
       );
     }
     
     setFilteredGyms(filtered);
-  };
-  
+  }, [filters, gyms]);
+
   const getGymClasses = async (gym_id: string): Promise<FitnessClass[]> => {
     try {
       const { data, error } = await supabase
         .from('classes')
         .select('*')
-        .eq('gymid', gym_id);
+        .eq('gym_id', gym_id)
+        .order('starttime', { ascending: true });
         
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      return data || [];
+      return data as FitnessClass[];
     } catch (error) {
       console.error('Error fetching gym classes:', error);
-      return [];
+      throw error;
     }
   };
-  
-  const getUserBookings = async (): Promise<Booking[]> => {
-    if (!currentUser) {
-      return [];
-    }
-    
+
+  const getGymById = async (id: string): Promise<Gym | null> => {
     try {
       const { data, error } = await supabase
-        .from('bookings')
-        .select('*, class:class_id(*), gym:gym_id(*)')
-        .eq('user_id', currentUser.id);
+        .from('gyms')
+        .select('*')
+        .eq('id', id)
+        .single();
         
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      if (data) {
-        setBookings(data);
-        return data;
-      }
+      if (!data) return null;
       
-      return [];
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        city: data.city,
+        address: data.address,
+        location: data.location,
+        main_image: data.main_image,
+        images: data.images,
+        ownerid: data.ownerid,
+        rating: data.rating,
+        review_count: data.review_count,
+        working_hours: data.working_hours,
+        features: data.features || [],
+      };
     } catch (error) {
-      console.error('Error fetching user bookings:', error);
-      return [];
+      console.error('Error fetching gym:', error);
+      return null;
     }
   };
-  
+
+  const getClassById = async (id: string): Promise<FitnessClass | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (error) throw error;
+      
+      if (!data) return null;
+      
+      return data as FitnessClass;
+    } catch (error) {
+      console.error('Error fetching class:', error);
+      return null;
+    }
+  };
+
   const bookClass = async (class_id: string, gym_id: string): Promise<boolean> => {
     if (!currentUser) {
-      toast.error('Пожалуйста, войдите в аккаунт');
+      toast.error('Необходимо авторизоваться');
       return false;
     }
-    
+
+    setIsLoading(true);
     try {
       // Check if already booked
       const { data: existingBooking, error: checkError } = await supabase
@@ -185,34 +248,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .eq('user_id', currentUser.id)
         .eq('class_id', class_id);
         
-      if (checkError) {
-        throw checkError;
-      }
+      if (checkError) throw checkError;
       
       if (existingBooking && existingBooking.length > 0) {
         toast.error('Вы уже записаны на это занятие');
         return false;
       }
       
-      // Get the class details
-      const { data: classData, error: classError } = await supabase
+      // Get class info to check availability
+      const { data: cls, error: classError } = await supabase
         .from('classes')
         .select('*')
         .eq('id', class_id)
         .single();
         
-      if (classError || !classData) {
-        throw classError || new Error('Занятие не найдено');
-      }
+      if (classError) throw classError;
       
-      // Check if class is full
-      if (classData.booked_count >= classData.capacity) {
-        toast.error('Нет свободных мест');
+      if (cls.booked_count >= cls.capacity) {
+        toast.error('Все места заняты');
         return false;
       }
       
-      // Create booking
-      const { data: bookingData, error: bookingError } = await supabase
+      // Book class
+      const { error: bookingError } = await supabase
         .from('bookings')
         .insert({
           user_id: currentUser.id,
@@ -220,115 +278,338 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           gym_id: gym_id,
           status: 'BOOKED',
           date_time: new Date().toISOString(),
-        })
-        .select();
+        });
         
-      if (bookingError) {
-        throw bookingError;
-      }
+      if (bookingError) throw bookingError;
       
       // Increment booked count
       await supabase.rpc('increment_booked_count', { class_id: class_id });
       
       // Update local state
-      const updatedClasses = classes.map(cls => 
-        cls.id === class_id
-          ? { ...cls, booked_count: cls.booked_count + 1 }
-          : cls
+      setClasses(prevClasses => 
+        prevClasses.map(c => 
+          c.id === class_id 
+            ? { ...c, booked_count: c.booked_count + 1 } 
+            : c
+        )
       );
       
-      setClasses(updatedClasses);
+      // Refresh bookings
+      getUserBookings(currentUser.id);
       
-      // Fetch updated bookings
-      getUserBookings();
-      
-      toast.success('Запись на занятие успешно создана');
+      toast.success('Вы успешно записались на занятие');
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error booking class:', error);
-      toast.error(error.message || 'Ошибка при записи на занятие');
+      toast.error('Ошибка при записи на занятие');
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
-  
-  const cancelBooking = async (booking_id: string): Promise<boolean> => {
+
+  const cancelBooking = async (bookingId: string): Promise<boolean> => {
     if (!currentUser) {
-      toast.error('Пожалуйста, войдите в аккаунт');
+      toast.error('Необходимо авторизоваться');
       return false;
     }
-    
+
+    setIsLoading(true);
     try {
-      const { error } = await supabase
+      // Get booking to get class_id
+      const { data: booking, error: getError } = await supabase
         .from('bookings')
-        .delete()
-        .eq('id', booking_id)
-        .eq('user_id', currentUser.id);
-        
-      if (error) {
-        throw error;
-      }
-      
-      // Decrement booked count
-      const { data: booking, error: bookingError } = await supabase
-        .from('bookings')
-        .select('class_id')
-        .eq('id', booking_id)
+        .select('*, class:class_id(*)')
+        .eq('id', bookingId)
         .single();
         
-      if (bookingError || !booking) {
-        throw bookingError || new Error('Бронирование не найдено');
+      if (getError) throw getError;
+      
+      if (booking.user_id !== currentUser.id) {
+        toast.error('У вас нет прав для отмены этой записи');
+        return false;
       }
       
+      // Cancel booking
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({ status: 'CANCELLED' })
+        .eq('id', bookingId);
+        
+      if (updateError) throw updateError;
+      
+      // Decrement booked count
       await supabase.rpc('decrement_booked_count', { class_id: booking.class_id });
       
       // Update local state
-      const updatedClasses = classes.map(cls => 
-        cls.id === booking.class_id
-          ? { ...cls, booked_count: cls.booked_count - 1 }
-          : cls
+      setBookings(prevBookings => 
+        prevBookings.map(b => 
+          b.id === bookingId ? { ...b, status: 'CANCELLED' } : b
+        )
       );
       
-      setClasses(updatedClasses);
+      setClasses(prevClasses => 
+        prevClasses.map(c => 
+          c.id === booking.class_id 
+            ? { ...c, booked_count: Math.max(0, c.booked_count - 1) } 
+            : c
+        )
+      );
       
-      // Fetch updated bookings
-      getUserBookings();
-      
-      toast.success('Бронирование успешно отменено');
+      toast.success('Запись отменена');
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error cancelling booking:', error);
-      toast.error(error.message || 'Ошибка при отмене бронирования');
+      toast.error('Ошибка при отмене записи');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getUserBookings = async (user_id: string): Promise<Booking[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*, class:class_id(*), gym:gym_id(*)')
+        .eq('user_id', user_id);
+        
+      if (error) {
+        console.error('Error fetching user bookings:', error);
+        throw error;
+      }
+      
+      setBookings(data || []);
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching user bookings:', error);
+      return [];
+    }
+  };
+
+  const addGym = async (gym: Omit<Gym, "id">): Promise<string> => {
+    try {
+      const { data, error } = await supabase
+        .from('gyms')
+        .insert({
+          name: gym.name,
+          description: gym.description,
+          category: gym.category,
+          city: gym.city,
+          address: gym.address,
+          location: gym.location,
+          main_image: gym.main_image,
+          images: gym.images,
+          ownerid: gym.ownerid,
+          rating: gym.rating || 0,
+          review_count: gym.review_count || 0,
+          working_hours: gym.working_hours,
+          features: gym.features,
+        })
+        .select('id')
+        .single();
+        
+      if (error) throw error;
+      
+      // Update local state
+      const newGym = { id: data.id, ...gym };
+      setGyms(prevGyms => [...prevGyms, newGym]);
+      setFilteredGyms(prevGyms => [...prevGyms, newGym]);
+      
+      return data.id;
+    } catch (error) {
+      console.error('Error adding gym:', error);
+      throw error;
+    }
+  };
+
+  const addClass = async (fitnessClass: Omit<FitnessClass, "id">): Promise<string> => {
+    try {
+      const { data, error } = await supabase
+        .from('classes')
+        .insert(fitnessClass)
+        .select('id')
+        .single();
+        
+      if (error) throw error;
+      
+      // Update local state if it's a class for the currently selected gym
+      if (selectedGym && fitnessClass.gym_id === selectedGym.id) {
+        const newClass = { id: data.id, ...fitnessClass };
+        setClasses(prevClasses => [...prevClasses, newClass]);
+      }
+      
+      return data.id;
+    } catch (error) {
+      console.error('Error adding class:', error);
+      throw error;
+    }
+  };
+
+  const updateGym = async (id: string, updates: Partial<Gym>): Promise<boolean> => {
+    try {
+      const dbUpdates: any = {};
+      
+      // Map fields to database column names
+      if ('name' in updates) dbUpdates.name = updates.name;
+      if ('description' in updates) dbUpdates.description = updates.description;
+      if ('category' in updates) dbUpdates.category = updates.category;
+      if ('city' in updates) dbUpdates.city = updates.city;
+      if ('address' in updates) dbUpdates.address = updates.address;
+      if ('location' in updates) dbUpdates.location = updates.location;
+      if ('main_image' in updates) dbUpdates.main_image = updates.main_image;
+      if ('images' in updates) dbUpdates.images = updates.images;
+      if ('working_hours' in updates) dbUpdates.working_hours = updates.working_hours;
+      if ('features' in updates) dbUpdates.features = updates.features;
+      
+      const { error } = await supabase
+        .from('gyms')
+        .update(dbUpdates)
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setGyms(prevGyms => 
+        prevGyms.map(g => g.id === id ? { ...g, ...updates } : g)
+      );
+      
+      setFilteredGyms(prevGyms => 
+        prevGyms.map(g => g.id === id ? { ...g, ...updates } : g)
+      );
+      
+      if (selectedGym && selectedGym.id === id) {
+        setSelectedGym({ ...selectedGym, ...updates });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating gym:', error);
       return false;
     }
   };
-  
-  const value: AppContextType = {
+
+  const updateClass = async (id: string, updates: Partial<FitnessClass>): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('classes')
+        .update(updates)
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setClasses(prevClasses => 
+        prevClasses.map(c => c.id === id ? { ...c, ...updates } : c)
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating class:', error);
+      return false;
+    }
+  };
+
+  const deleteGym = async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('gyms')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setGyms(prevGyms => prevGyms.filter(g => g.id !== id));
+      setFilteredGyms(prevGyms => prevGyms.filter(g => g.id !== id));
+      
+      if (selectedGym && selectedGym.id === id) {
+        setSelectedGym(null);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting gym:', error);
+      return false;
+    }
+  };
+
+  const deleteClass = async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('classes')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setClasses(prevClasses => prevClasses.filter(c => c.id !== id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting class:', error);
+      return false;
+    }
+  };
+
+  const addReview = async (review: Omit<Review, "id" | "date">): Promise<boolean> => {
+    try {
+      // Add review
+      const { error } = await supabase
+        .from('reviews')
+        .insert({
+          user_id: review.user_id,
+          gym_id: review.gym_id,
+          userName: review.userName,
+          rating: review.rating,
+          comment: review.comment,
+          date: new Date().toISOString(),
+          userImage: review.userImage
+        });
+        
+      if (error) throw error;
+      
+      // Update gym rating
+      await supabase.rpc('update_gym_rating', { 
+        gym_id: review.gym_id 
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error adding review:', error);
+      return false;
+    }
+  };
+
+  // Context value
+  const value = {
     gyms,
     filteredGyms,
-    filterGyms,
+    selectedGym,
     classes,
-    getGymClasses,
     bookings,
-    bookClass,
-    cancelBooking,
     subscriptions,
     currentUser,
-    getUserBookings
+    isLoading,
+    filters,
+    setFilters,
+    getGymById,
+    getClassById,
+    getGymClasses,
+    getUserBookings,
+    bookClass,
+    cancelBooking,
+    addGym,
+    addClass,
+    updateGym,
+    updateClass,
+    deleteGym,
+    deleteClass,
+    addReview,
   };
-  
-  return (
-    <AppContext.Provider value={value}>
-      {children}
-    </AppContext.Provider>
-  );
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
-export const useApp = () => {
-  const context = useContext(AppContext);
-  
-  if (context === undefined) {
-    throw new Error('useApp must be used within an AppProvider');
-  }
-  
-  return context;
-};
+export default AppContext;

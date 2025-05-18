@@ -1,193 +1,265 @@
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useApp } from "@/context/AppContext";
-import { Dumbbell, MapPin, Clock, Star } from "lucide-react";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
-} from "@/components/ui/carousel";
+import { ArrowLeft, Clock, Star, MapPin, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { ClassCard } from "@/components/ClassCard";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FitnessClass } from "@/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { FitnessClass, Gym } from "@/types";
+import { format, parseISO } from "date-fns";
+import { ru } from "date-fns/locale";
+import { useApp } from "@/context/AppContext";
+import { Header } from "@/components/Header";
 
 const GymDetailPage = () => {
-  const { gym_id } = useParams<{ gym_id: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getGymById, getGymClasses } = useApp();
+  
+  const [gym, setGym] = useState<Gym | null>(null);
   const [classes, setClasses] = useState<FitnessClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  const gym = getGymById(gym_id!);
-  
   useEffect(() => {
-    const fetchClasses = async () => {
-      if (gym_id) {
-        setIsLoading(true);
-        try {
-          const gymClasses = await getGymClasses(gym_id);
-          setClasses(gymClasses);
-        } catch (error) {
-          console.error("Error fetching classes:", error);
-        } finally {
-          setIsLoading(false);
+    const fetchGym = async () => {
+      if (!id) return;
+      
+      setIsLoading(true);
+      try {
+        const gymData = await getGymById(id);
+        if (gymData) {
+          setGym(gymData);
+          
+          // Also fetch classes
+          const classesData = await getGymClasses(id);
+          setClasses(classesData);
+        } else {
+          // Gym not found
+          navigate("/gyms");
         }
+      } catch (error) {
+        console.error("Error fetching gym:", error);
+        navigate("/gyms");
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    fetchClasses();
-  }, [gym_id, getGymClasses]);
+    fetchGym();
+  }, [id, navigate, getGymById, getGymClasses]);
   
-  if (!gym) {
-    return <div className="container mx-auto px-4 py-8">Зал не найден</div>;
+  if (isLoading || !gym) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <p className="mt-4 text-muted-foreground">Загрузка...</p>
+      </div>
+    );
   }
-  
+
   const features = gym.features || [];
   
   return (
-    <div className="container mx-auto px-4 py-8 mb-16">
-      {/* Carousel */}
-      <Carousel className="mb-8">
-        <CarouselContent>
-          {[gym.main_image, ...gym.images].map((image, index) => (
-            <CarouselItem key={index}>
-              <AspectRatio ratio={16 / 9}>
-                <img
-                  src={image}
-                  alt={`${gym.name} - фото ${index + 1}`}
-                  className="rounded-xl w-full h-full object-cover"
-                />
-              </AspectRatio>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
-      </Carousel>
-
-      {/* Gym Details */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{gym.name}</h1>
-        
-        <div className="flex items-center gap-6 mb-4 text-sm text-muted-foreground flex-wrap">
-          <div className="flex items-center">
-            <MapPin size={16} className="mr-1" />
-            {gym.address}
-          </div>
-          <div className="flex items-center">
-            <Clock size={16} className="mr-1" />
-            {gym.working_hours.open} - {gym.working_hours.close}
-          </div>
-          <div className="flex items-center">
-            <Star size={16} className="mr-1" />
-            {gym.rating} ({gym.review_count} отзывов)
-          </div>
+    <div className="flex flex-col min-h-screen">
+      <Header>
+        <div className="flex items-center">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-lg font-medium truncate">{gym.name}</h1>
         </div>
-        
-        <div className="flex flex-wrap gap-2 mb-4">
-          {gym.category.map((cat, idx) => (
-            <Badge key={idx} variant="outline">
-              {cat}
-            </Badge>
-          ))}
-        </div>
-        
-        <p className="mb-6 text-muted-foreground">{gym.description}</p>
-        
-        {features.length > 0 && (
-          <div className="mb-6">
-            <h3 className="font-semibold mb-2">Особенности</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {features.map((feature, idx) => (
-                <div key={idx} className="flex items-center">
-                  <Dumbbell size={16} className="mr-2 text-blue-500" />
-                  <span>{feature}</span>
-                </div>
-              ))}
+      </Header>
+      
+      <div className="relative">
+        <AspectRatio ratio={16/9} className="w-full bg-muted">
+          <img
+            src={gym.main_image}
+            alt={gym.name}
+            className="object-cover w-full h-full"
+          />
+        </AspectRatio>
+      </div>
+      
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">{gym.name}</h1>
+            <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4" />
+              <span>{gym.city}, {gym.address}</span>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Classes */}
-      <Tabs defaultValue="classes">
-        <TabsList>
-          <TabsTrigger value="classes">Расписание занятий</TabsTrigger>
-          <TabsTrigger value="info">Информация</TabsTrigger>
-        </TabsList>
+          
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-medium">{gym.rating.toFixed(1)}</span>
+              <span className="text-sm text-muted-foreground">({gym.review_count})</span>
+            </div>
+            <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>{gym.working_hours?.open} - {gym.working_hours?.close}</span>
+            </div>
+          </div>
+        </div>
         
-        <TabsContent value="classes">
-          <div className="py-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Ближайшие занятия</h2>
-              <Button 
-                variant="outline" 
-                onClick={() => navigate(`/classes?gym_id=${gym.id}`)}
-              >
-                Все занятия
-              </Button>
+        <Tabs defaultValue="info" className="mb-8">
+          <TabsList className="grid grid-cols-3 w-full">
+            <TabsTrigger value="info">Информация</TabsTrigger>
+            <TabsTrigger value="schedule">Расписание</TabsTrigger>
+            <TabsTrigger value="reviews">Отзывы</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="info" className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold mb-2">О зале</h2>
+              <p className="text-muted-foreground">
+                {gym.description}
+              </p>
             </div>
             
-            {isLoading ? (
-              <p>Загрузка занятий...</p>
-            ) : classes.length === 0 ? (
-              <p>Нет предстоящих занятий</p>
-            ) : (
-              <div className="space-y-4">
-                {classes.slice(0, 3).map((fitnessClass) => (
-                  <ClassCard 
-                    key={fitnessClass.id}
-                    fitnessClass={fitnessClass}
-                  />
-                ))}
-                
-                {classes.length > 3 && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full mt-4"
-                    onClick={() => navigate(`/classes?gym_id=${gym.id}`)}
-                  >
-                    Показать все {classes.length} занятий
-                  </Button>
-                )}
+            {features.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Удобства</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  {features.map((feature, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <CircleCheck className="h-4 w-4 text-green-500" />
+                      <span>{feature}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="info">
-          <div className="py-4">
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2">Адрес</h3>
-                <p>{gym.address}</p>
+            
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Категории</h2>
+              <div className="flex flex-wrap gap-2">
+                {gym.category.map((cat, idx) => (
+                  <span 
+                    key={idx} 
+                    className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm"
+                  >
+                    {cat}
+                  </span>
+                ))}
               </div>
-              
-              <div>
-                <h3 className="font-semibold mb-2">Время работы</h3>
-                <p>Ежедневно: {gym.working_hours.open} - {gym.working_hours.close}</p>
-              </div>
-              
-              {features.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-2">Особенности зала</h3>
-                  <ul className="list-disc pl-5">
-                    {gym.features?.map((feature, i) => (
-                      <li key={i}>{feature}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+            
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Фотографии</h2>
+              <Carousel className="w-full">
+                <CarouselContent>
+                  {gym.images.map((image, idx) => (
+                    <CarouselItem key={idx} className="md:basis-1/2 lg:basis-1/3">
+                      <div className="p-1">
+                        <Card>
+                          <CardContent className="flex aspect-square items-center justify-center p-0">
+                            <img
+                              src={image}
+                              alt={`${gym.name} photo ${idx + 1}`}
+                              className="w-full h-full object-cover rounded-md"
+                            />
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="schedule">
+            {classes.length === 0 ? (
+              <div className="text-center py-12">
+                <h2 className="text-lg font-semibold mb-2">Нет запланированных занятий</h2>
+                <p className="text-muted-foreground">
+                  У данного зала пока нет доступных занятий в расписании
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {classes.map((cls) => {
+                  const startTime = parseISO(cls.starttime);
+                  const endTime = parseISO(cls.end_time);
+                  
+                  return (
+                    <Card key={cls.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="text-sm font-medium text-muted-foreground mb-1">
+                              {format(startTime, "d MMMM, EEEE", { locale: ru })}
+                            </div>
+                            <h3 className="text-lg font-semibold mb-1">{cls.title}</h3>
+                            <div className="text-sm text-muted-foreground">
+                              {format(startTime, "HH:mm")} - {format(endTime, "HH:mm")}
+                            </div>
+                            <div className="text-sm mt-1">
+                              Инструктор: {cls.instructor}
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+                                {cls.category}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {cls.booked_count}/{cls.capacity} мест занято
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={() => navigate(`/booking/${gym.id}/${cls.id}`)}
+                            className="bg-blue-500 hover:bg-blue-600"
+                          >
+                            Записаться
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="reviews">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold">{gym.rating.toFixed(1)}</span>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-4 w-4 ${star <= Math.round(gym.rating) 
+                          ? 'fill-yellow-400 text-yellow-400' 
+                          : 'text-gray-300'}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {gym.review_count} {gym.review_count === 1 ? 'отзыв' : 
+                      (gym.review_count > 1 && gym.review_count < 5) ? 'отзыва' : 'отзывов'}
+                  </span>
+                </div>
+                <Button className="bg-blue-500 hover:bg-blue-600">
+                  Написать отзыв
+                </Button>
+              </div>
+              <Separator />
+              <div className="py-8 text-center text-muted-foreground">
+                <p>Отзывов пока нет</p>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
