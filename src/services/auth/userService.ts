@@ -1,26 +1,25 @@
-
 import { supabase } from "@/lib/supabaseClient";
 import { User } from "@/types";
 import { isEmail, formatPhoneNumber } from "./formatUtils";
 
 // Функция для создания или получения пользователя из базы данных
-export const getUserOrCreate = async (userId: string, userData: {
+export const getUserOrCreate = async (user_id: string, userData: {
   name?: string;
   phone?: string;
   email?: string;
 }): Promise<User> => {
-  if (!userId) {
+  if (!user_id) {
     throw new Error('Идентификатор пользователя не указан');
   }
   
-  console.log("Getting or creating user with ID:", userId, "userData:", userData);
+  console.log("Getting or creating user with ID:", user_id, "userData:", userData);
   
   try {
     // Шаг 1: Проверяем, существует ли пользователь с таким ID в базе данных
     const { data: existingUserById, error: userIdError } = await supabase
       .from('users')
       .select('*')
-      .eq('id', userId)
+      .eq('id', user_id)
       .single();
 
     // Если пользователь с таким ID существует, обновляем данные и возвращаем
@@ -55,7 +54,7 @@ export const getUserOrCreate = async (userId: string, userData: {
         const { error: updateError } = await supabase
           .from('users')
           .update(updateData)
-          .eq('id', userId);
+          .eq('id', user_id);
           
         if (updateError) {
           console.error("Error updating user data:", updateError);
@@ -92,17 +91,17 @@ export const getUserOrCreate = async (userId: string, userData: {
         // обновляем ID в базе данных на новый от auth
         const { error: updateIdError } = await supabase
           .from('users')
-          .update({ id: userId })
+          .update({ id: user_id })
           .eq('id', existingUserByEmail.id);
           
         if (updateIdError) {
           console.error("Error updating user ID:", updateIdError);
         } else {
-          console.log(`Updated user ID from ${existingUserByEmail.id} to ${userId}`);
+          console.log(`Updated user ID from ${existingUserByEmail.id} to ${user_id}`);
         }
         
         // Обновляем другие данные, если необходимо
-        const updateData: Record<string, any> = { id: userId };
+        const updateData: Record<string, any> = { id: user_id };
         let needsUpdate = false;
         
         if (!existingUserByEmail.phone && userData.phone) {
@@ -128,7 +127,7 @@ export const getUserOrCreate = async (userId: string, userData: {
         }
 
         const user: User = {
-          id: userId, // Используем новый ID
+          id: user_id, // Используем новый ID
           name: existingUserByEmail.name || userData.name || '',
           email: existingUserByEmail.email || userData.email || '',
           phone: existingUserByEmail.phone || userData.phone || '',
@@ -150,7 +149,7 @@ export const getUserOrCreate = async (userId: string, userData: {
       .from('users')
       .insert([
         {
-          id: userId,
+          id: user_id,
           name: userData.name || '',
           phone: userData.phone || '',
           email: userData.email || '',
@@ -168,7 +167,7 @@ export const getUserOrCreate = async (userId: string, userData: {
       const { data: retryUser, error: retryError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', userId)
+        .eq('id', user_id)
         .single();
         
       if (retryError || !retryUser) {

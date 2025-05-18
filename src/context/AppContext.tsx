@@ -1,737 +1,373 @@
-
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Gym, FitnessClass, Subscription, User, Booking } from "@/types";
+import { createContext, useContext, useState, useEffect } from "react";
+import { Gym, FitnessClass, Booking, Subscription } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
-import { useAuth } from "./AuthContext";
-import { toast } from "sonner";
 
-type AppContextType = {
+// Define the context type
+interface AppContextType {
   gyms: Gym[];
-  classes: FitnessClass[];
-  subscriptions: Subscription[];
   filteredGyms: Gym[];
-  user: User | null;
+  subscriptions: Subscription[];
   bookings: Booking[];
-  getGymById: (id: string) => Gym | undefined;
-  getClassById: (id: string) => FitnessClass | undefined;
+  filterGyms: (filters: { city?: string; category?: string[] }) => void;
+  getGymById: (gymId: string) => Gym | undefined;
+  getClassById: (classId: string) => FitnessClass | undefined;
   getGymClasses: (gymId: string) => Promise<FitnessClass[]>;
-  filterGyms: (filters: { city?: string, category?: string[], search?: string }) => void;
   bookClass: (classId: string, gymId: string) => Promise<boolean>;
-  getUserBookings: () => Promise<Booking[]>;
   cancelBooking: (bookingId: string) => Promise<boolean>;
-  addGym: (gym: Omit<Gym, "id" | "rating" | "review_count">) => Promise<Gym>;
-  updateGym: (id: string, updates: Partial<Gym>) => Promise<Gym>;
-  addClass: (classData: Omit<FitnessClass, "id" | "booked_count">) => Promise<FitnessClass>;
-  updateClass: (id: string, updates: Partial<FitnessClass>) => Promise<FitnessClass>;
-  deleteClass: (id: string) => Promise<boolean>;
-};
-
-const AppContext = createContext<AppContextType | undefined>(undefined);
-
-export const useApp = () => {
-  const context = useContext(AppContext);
-  if (context === undefined) {
-    throw new Error("useApp must be used within an AppProvider");
-  }
-  return context;
-};
-
-interface AppProviderProps {
-  children: ReactNode;
+  updateGym: (gymId: string, updates: Partial<Gym>) => Promise<void>;
+  addGym: (gym: Omit<Gym, 'id'>) => Promise<Gym | null>;
+  deleteGym: (gymId: string) => Promise<boolean>;
+  createSubscription: (subscription: Omit<Subscription, 'id'>) => Promise<Subscription | null>;
+  updateSubscription: (subscriptionId: string, updates: Partial<Subscription>) => Promise<void>;
+  deleteSubscription: (subscriptionId: string) => Promise<boolean>;
 }
 
-export const AppProvider = ({ children }: AppProviderProps) => {
-  const { currentUser } = useAuth();
+// Create the context with a default value of null
+const AppContext = createContext<AppContextType | null>(null);
+
+// Create a provider component
+export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [gyms, setGyms] = useState<Gym[]>([]);
-  const [classes, setClasses] = useState<FitnessClass[]>([]);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [filteredGyms, setFilteredGyms] = useState<Gym[]>([]);
+   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const user = currentUser;
 
-  // Fetch initial data
   useEffect(() => {
-    const fetchData = async () => {
-      // Fetch gyms
-      const { data: gymsData, error: gymsError } = await supabase
-        .from('gyms')
-        .select('*');
-      
-      if (gymsError) {
-        console.error('Error fetching gyms:', gymsError);
-      } else if (gymsData) {
-        const formattedGyms: Gym[] = gymsData.map(gym => ({
-          id: gym.id,
-          name: gym.name,
-          description: gym.description,
-          address: gym.address,
-          city: gym.city,
-          main_image: gym.main_image,
-          images: gym.images,
-          features: gym.features,
-          category: gym.category,
-          location: { lat: gym.location?.lat || 0, lng: gym.location?.lng || 0 },
-          working_hours: gym.working_hours,
-          rating: gym.rating,
-          review_count: gym.review_count,
-          ownerid: gym.ownerid
-        }));
-        setGyms(formattedGyms);
-        setFilteredGyms(formattedGyms);
-      }
-      
-      // Fetch classes
-      const now = new Date();
-      const { data: classesData, error: classesError } = await supabase
-        .from('classes')
-        .select('*')
-        .gt('starttime', now.toISOString());
-      
-      if (classesError) {
-        console.error('Error fetching classes:', classesError);
-      } else if (classesData) {
-        const formattedClasses: FitnessClass[] = classesData.map(cls => ({
-          id: cls.id,
-          gymid: cls.gymid,
-          title: cls.name,
-          description: cls.description,
-          instructor: cls.instructor,
-          starttime: cls.starttime,
-          end_time: cls.end_time,
-          category: cls.category,
-          capacity: cls.capacity,
-          booked_count: cls.booked_count
-        }));
-        setClasses(formattedClasses);
-      }
-      
-      // Fetch subscriptions
-      const { data: subscriptionsData, error: subscriptionsError } = await supabase
-        .from('subscriptions')
-        .select('*');
-      
-      if (subscriptionsError) {
-        console.error('Error fetching subscriptions:', subscriptionsError);
-      } else if (subscriptionsData) {
-        const formattedSubscriptions: Subscription[] = subscriptionsData.map(sub => ({
-          id: sub.id,
-          name: sub.name,
-          price: sub.price,
-          durationDays: sub.duration_days,
-          features: sub.features,
-          isPopular: sub.is_popular
-        }));
-        setSubscriptions(formattedSubscriptions);
-      }
+    const fetchGyms = async () => {
+      const { data, error } = await supabase.from('gyms').select('*');
 
-      // Fetch bookings if user is logged in
-      if (currentUser) {
-        getUserBookings().then(bookings => {
-          setBookings(bookings);
-        });
+      if (error) {
+        console.error("Error fetching gyms:", error);
+      } else {
+        setGyms(data as Gym[]);
+        setFilteredGyms(data as Gym[]);
       }
     };
 
-    fetchData();
-  }, [currentUser]);
+    fetchGyms();
+  }, []);
 
-  const getGymById = (id: string): Gym | undefined => {
-    return gyms.find((gym) => gym.id === id);
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      const { data, error } = await supabase.from('subscriptions').select('*');
+
+      if (error) {
+        console.error("Error fetching subscriptions:", error);
+      } else {
+        setSubscriptions(data as Subscription[]);
+      }
+    };
+
+    fetchSubscriptions();
+  }, []);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      const { data, error } = await supabase.from('bookings').select('*');
+
+      if (error) {
+        console.error("Error fetching bookings:", error);
+      } else {
+        setBookings(data as Booking[]);
+      }
+    };
+
+    fetchBookings();
+  }, []);
+
+  const filterGyms = (filters: { city?: string; category?: string[] }) => {
+    let filtered = [...gyms];
+
+    if (filters.city) {
+      filtered = filtered.filter((gym) => gym.city === filters.city);
+    }
+
+    if (filters.category && filters.category.length > 0) {
+      filtered = filtered.filter((gym) =>
+        filters.category?.every((cat) => gym.category.includes(cat))
+      );
+    }
+
+    setFilteredGyms(filtered);
   };
 
-  const getClassById = (id: string): FitnessClass | undefined => {
-    return classes.find((cls) => cls.id === id);
+  const getGymById = (gymId: string): Gym | undefined => {
+    return gyms.find((gym) => gym.id === gymId);
+  };
+
+  const getClassById = (classId: string): FitnessClass | undefined => {
+    return gyms.flatMap(gym => gym.id).find((gymid) => gymid === classId) as unknown as FitnessClass;
   };
 
   const getGymClasses = async (gymId: string): Promise<FitnessClass[]> => {
-    const now = new Date();
     const { data, error } = await supabase
       .from('classes')
       .select('*')
       .eq('gymid', gymId)
-      .gt('starttime', now.toISOString())
-      .order('starttime', { ascending: true });
-    
+
     if (error) {
-      console.error('Error fetching gym classes:', error);
+      console.error("Error fetching classes:", error);
       return [];
     }
-    
-    return data.map(cls => ({
-      id: cls.id,
-      gymid: cls.gymid,
-      title: cls.name,
-      description: cls.description,
-      instructor: cls.instructor,
-      starttime: cls.starttime,
-      end_time: cls.end_time,
-      category: cls.category,
-      capacity: cls.capacity,
-      booked_count: cls.booked_count
-    }));
-  };
 
-  const filterGyms = (filters: { city?: string, category?: string[], search?: string }) => {
-    let result = [...gyms];
-    
-    // Apply city filter
-    if (filters.city) {
-      result = result.filter(gym => 
-        gym.city.toLowerCase() === filters.city!.toLowerCase()
-      );
-    }
-    
-    // Apply category filter
-    if (filters.category && filters.category.length > 0) {
-      result = result.filter(gym => 
-        gym.category?.some(cat => filters.category!.includes(cat))
-      );
-    }
-    
-    // Apply search filter
-    if (filters.search?.trim()) {
-      const query = filters.search.toLowerCase().trim();
-      result = result.filter(gym => 
-        gym.name.toLowerCase().includes(query) || 
-        gym.description.toLowerCase().includes(query) ||
-        gym.address.toLowerCase().includes(query)
-      );
-    }
-    
-    setFilteredGyms(result);
+    return data as FitnessClass[];
   };
 
   const bookClass = async (classId: string, gymId: string): Promise<boolean> => {
-    if (!user) {
-      toast("Необходимо войти в систему");
+    const { data: bookingData, error: bookingError } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('class_id', classId)
+      .eq('user_id', supabase.auth.currentUser?.id!)
+      .single();
+    
+    if (bookingError && bookingError.code !== '404') {
+      console.error("Error checking existing booking:", bookingError);
       return false;
     }
     
-    try {
-      // Check if user already has a booking for this class
-      const { data: existingBookings } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('class_id', classId);
-      
-      if (existingBookings && existingBookings.length > 0) {
-        toast("Вы уже записаны на это занятие");
-        return false;
-      }
-      
-      // Check if class is full
-      const { data: classData } = await supabase
-        .from('classes')
-        .select('*')
-        .eq('id', classId)
-        .single();
-      
-      if (classData && classData.booked_count >= classData.capacity) {
-        toast("Занятие уже заполнено");
-        return false;
-      }
-      
-      // Create booking
-      const { error } = await supabase
-        .from('bookings')
-        .insert([
-          { 
-            user_id: user.id, 
-            class_id: classId,
-            gym_id: gymId,
-            status: 'BOOKED', 
-            date_time: new Date().toISOString(),
-            created_at: new Date().toISOString()
-          }
-        ]);
-      
-      if (error) {
-        console.error('Error booking class:', error);
-        toast("Ошибка при бронировании");
-        return false;
-      }
-      
-      // Update class booked count
-      await supabase.rpc('increment_booked_count', { class_id: classId });
-      
-      // Update local state
-      setClasses(prevClasses => 
-        prevClasses.map(cls => 
-          cls.id === classId 
-            ? { ...cls, booked_count: cls.booked_count + 1 } 
-            : cls
-        )
-      );
-      
-      // Refresh bookings
-      const updatedBookings = await getUserBookings();
-      setBookings(updatedBookings);
-      
-      toast("Вы успешно записались на занятие");
-      return true;
-    } catch (error) {
-      console.error('Error in bookClass:', error);
-      toast("Произошла ошибка");
+    if (bookingData) {
+      console.warn("User already booked this class");
       return false;
     }
-  };
+    
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select('capacity, booked_count')
+      .eq('id', classId)
+      .single();
+    
+    if (classError) {
+      console.error("Error fetching class capacity:", classError);
+      return false;
+    }
+    
+    if (classData && classData.booked_count! >= classData.capacity!) {
+      console.warn("Class is fully booked");
+      return false;
+    }
 
-  const getUserBookings = async (): Promise<Booking[]> => {
-    if (!user) return [];
-    
-    try {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          classes:class_id(*),
-          gyms:gym_id(*)
-        `)
-        .eq('user_id', user.id)
-        .order('date_time', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching bookings:', error);
-        return [];
-      }
-      
-      const formattedBookings: Booking[] = data.map(booking => ({
-        id: booking.id,
-        user_id: booking.user_id,
-        class_id: booking.class_id,
-        gym_id: booking.gym_id,
-        status: booking.status,
-        date_time: booking.date_time,
-        created_at: booking.created_at,
-        className: booking.classes.name,
-        gymName: booking.gyms.name,
-        class: {
-          id: booking.classes.id,
-          gymid: booking.classes.gymid,
-          title: booking.classes.name,
-          description: booking.classes.description,
-          instructor: booking.classes.instructor,
-          starttime: booking.classes.starttime,
-          end_time: booking.classes.end_time,
-          category: booking.classes.category,
-          capacity: booking.classes.capacity,
-          booked_count: booking.classes.booked_count
+    const { error } = await supabase
+      .from('bookings')
+      .insert([
+        {
+          user_id: supabase.auth.currentUser?.id!,
+          class_id: classId,
+          gym_id: gymId,
+          status: 'BOOKED',
+          date_time: new Date().toISOString(),
         },
-        gym: {
-          id: booking.gyms.id,
-          name: booking.gyms.name,
-          city: booking.gyms.city,
-          main_image: booking.gyms.main_image
-        }
-      }));
-      
-      return formattedBookings;
-    } catch (error) {
-      console.error('Error in getUserBookings:', error);
-      return [];
+      ]);
+
+    if (error) {
+      console.error("Error booking class:", error);
+      return false;
     }
+    
+    await supabase.rpc('increment_booked_count', { class_id: classId });
+
+    // Optimistically update the local state
+    setBookings((prevBookings) => [
+      ...prevBookings,
+      {
+        id: Math.random().toString(), // Temporary ID
+        user_id: supabase.auth.currentUser?.id!,
+        class_id: classId,
+        gym_id: gymId,
+        status: 'BOOKED',
+        date_time: new Date().toISOString(),
+      },
+    ]);
+
+    return true;
   };
 
   const cancelBooking = async (bookingId: string): Promise<boolean> => {
-    if (!user) return false;
-    
-    try {
-      // Get booking data to know which class to decrement
-      const { data: bookingData, error: fetchError } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('id', bookingId)
-        .single();
-      
-      if (fetchError || !bookingData) {
-        console.error('Error fetching booking:', fetchError);
-        return false;
-      }
-      
-      // Only allow cancellation if booking belongs to current user
-      if (bookingData.user_id !== user.id) {
-        toast("У вас нет прав для отмены этой записи");
-        return false;
-      }
-      
-      // Delete booking
-      const { error } = await supabase
-        .from('bookings')
-        .delete()
-        .eq('id', bookingId);
-      
-      if (error) {
-        console.error('Error cancelling booking:', error);
-        toast("Ошибка при отмене записи");
-        return false;
-      }
-      
-      // Decrement class booked count
-      await supabase.rpc('decrement_booked_count', { class_id: bookingData.class_id });
-      
-      // Update local state
-      setClasses(prevClasses => 
-        prevClasses.map(cls => 
-          cls.id === bookingData.class_id 
-            ? { ...cls, booked_count: Math.max(0, cls.booked_count - 1) } 
-            : cls
-        )
-      );
-      
-      toast("Запись успешно отменена");
-      return true;
-    } catch (error) {
-      console.error('Error in cancelBooking:', error);
-      toast("Произошла ошибка");
+    const { error } = await supabase
+      .from('bookings')
+      .delete()
+      .eq('id', bookingId);
+
+    if (error) {
+      console.error("Error cancelling booking:", error);
       return false;
     }
+
+    // Optimistically update the local state
+    setBookings((prevBookings) =>
+      prevBookings.filter((booking) => booking.id !== bookingId)
+    );
+
+    return true;
   };
 
-  const addGym = async (gym: Omit<Gym, "id" | "rating" | "review_count">): Promise<Gym> => {
-    if (!currentUser || currentUser.role !== "PARTNER") {
-      throw new Error("Недостаточно прав для добавления зала");
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('gyms')
-        .insert([
-          {
-            name: gym.name,
-            description: gym.description,
-            address: gym.address,
-            city: gym.city,
-            main_image: gym.main_image,
-            images: gym.images,
-            category: gym.category,
-            working_hours: gym.working_hours,
-            rating: 0,
-            review_count: 0,
-            ownerid: currentUser.id
-          }
-        ])
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error adding gym:', error);
-        throw error;
-      }
-      
-      const newGym: Gym = {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        address: data.address,
-        city: data.city,
-        main_image: data.main_image,
-        images: data.images,
-        features: data.features,
-        category: data.category,
-        location: { lat: 0, lng: 0 }, // Default location
-        working_hours: data.working_hours,
-        rating: data.rating,
-        review_count: data.review_count,
-        ownerid: data.ownerid
-      };
-      
-      // Update local state
-      setGyms(prevGyms => [...prevGyms, newGym]);
-      setFilteredGyms(prevFiltered => [...prevFiltered, newGym]);
-      
-      toast.success("Зал успешно добавлен");
-      return newGym;
-    } catch (error) {
-      console.error('Error in addGym:', error);
-      toast.error("Ошибка при добавлении зала");
+  const updateGym = async (gymId: string, updates: Partial<Gym>): Promise<void> => {
+    const dbUpdates: Partial<Gym> = {};
+
+    if ('name' in updates) dbUpdates.name = updates.name;
+    if ('description' in updates) dbUpdates.description = updates.description;
+    if ('category' in updates) dbUpdates.category = updates.category;
+    if ('city' in updates) dbUpdates.city = updates.city;
+    if ('address' in updates) dbUpdates.address = updates.address;
+    if ('location' in updates) dbUpdates.location = updates.location;
+    if ('main_image' in updates) dbUpdates.main_image = updates.main_image;
+    if ('images' in updates) dbUpdates.images = updates.images;
+    if ('ownerid' in updates) dbUpdates.ownerid = updates.ownerid;
+    if ('rating' in updates) dbUpdates.rating = updates.rating;
+    if ('review_count' in updates) dbUpdates.review_count = updates.review_count;
+    if ('working_hours' in updates) dbUpdates.working_hours = updates.working_hours;
+    if ('features' in updates) dbUpdates.features = updates.features;
+
+    const { error } = await supabase
+      .from('gyms')
+      .update(dbUpdates)
+      .eq('id', gymId);
+
+    if (error) {
+      console.error("Error updating gym:", error);
       throw error;
     }
+
+    // Optimistically update the local state
+    setGyms((prevGyms) =>
+      prevGyms.map((gym) => (gym.id === gymId ? { ...gym, ...updates } : gym))
+    );
+    setFilteredGyms((prevFilteredGyms) =>
+      prevFilteredGyms.map((gym) => (gym.id === gymId ? { ...gym, ...updates } : gym))
+    );
   };
 
-  const updateGym = async (id: string, updates: Partial<Gym>): Promise<Gym> => {
-    const gym = gyms.find(g => g.id === id);
-    
-    if (!gym) {
-      throw new Error("Зал не найден");
+  const addGym = async (gym: Omit<Gym, 'id'>): Promise<Gym | null> => {
+    const { data, error } = await supabase
+      .from('gyms')
+      .insert([gym])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding gym:", error);
+      return null;
     }
-    
-    if (!currentUser || (currentUser.role !== "PARTNER" && currentUser.role !== "ADMIN")) {
-      throw new Error("Недостаточно прав для обновления зала");
-    }
-    
-    if (currentUser.role === "PARTNER" && gym.ownerid !== currentUser.id) {
-      throw new Error("Вы можете редактировать только свои залы");
-    }
-    
-    try {
-      // Convert to database format
-      const dbUpdates: any = {};
-      
-      if ('name' in updates) dbUpdates.name = updates.name;
-      if ('description' in updates) dbUpdates.description = updates.description;
-      if ('address' in updates) dbUpdates.address = updates.address;
-      if ('city' in updates) dbUpdates.city = updates.city;
-      if ('main_image' in updates) dbUpdates.main_image = updates.main_image;
-      if ('images' in updates) dbUpdates.images = updates.images;
-      if ('features' in updates) dbUpdates.features = updates.features;
-      if ('category' in updates) dbUpdates.category = updates.category;
-      if ('working_hours' in updates) dbUpdates.working_hours = updates.working_hours;
-      
-      const { data, error } = await supabase
-        .from('gyms')
-        .update(dbUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error updating gym:', error);
-        throw error;
-      }
-      
-      const updatedGym: Gym = {
-        ...gym,
-        ...updates
-      };
-      
-      // Update local state
-      setGyms(prevGyms => 
-        prevGyms.map(g => g.id === id ? updatedGym : g)
-      );
-      
-      setFilteredGyms(prevFiltered => 
-        prevFiltered.map(g => g.id === id ? updatedGym : g)
-      );
-      
-      toast.success("Информация о зале обновлена");
-      return updatedGym;
-    } catch (error) {
-      console.error('Error in updateGym:', error);
-      toast.error("Ошибка при обновлении информации");
-      throw error;
-    }
+
+    // Optimistically update the local state
+    setGyms((prevGyms) => [...prevGyms, data as Gym]);
+    setFilteredGyms((prevFilteredGyms) => [...prevFilteredGyms, data as Gym]);
+
+    return data as Gym;
   };
 
-  const addClass = async (classData: Omit<FitnessClass, "id" | "booked_count">): Promise<FitnessClass> => {
-    const gym = gyms.find(g => g.id === classData.gymid);
-    
-    if (!gym) {
-      throw new Error("Зал не найден");
-    }
-    
-    if (!currentUser || (currentUser.role !== "PARTNER" && currentUser.role !== "ADMIN")) {
-      throw new Error("Недостаточно прав для добавления занятия");
-    }
-    
-    if (currentUser.role === "PARTNER" && gym.ownerid !== currentUser.id) {
-      throw new Error("Вы можете добавлять занятия только в свои залы");
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('classes')
-        .insert([
-          {
-            gymid: classData.gymid,
-            name: classData.title,
-            description: classData.description,
-            instructor: classData.instructor,
-            starttime: classData.starttime,
-            end_time: classData.end_time,
-            category: classData.category,
-            capacity: classData.capacity,
-            booked_count: 0
-          }
-        ])
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error adding class:', error);
-        throw error;
-      }
-      
-      const newClass: FitnessClass = {
-        id: data.id,
-        gymid: data.gymid,
-        title: data.name,
-        description: data.description,
-        instructor: data.instructor,
-        starttime: data.starttime,
-        end_time: data.end_time,
-        category: data.category,
-        capacity: data.capacity,
-        booked_count: data.booked_count
-      };
-      
-      // Update local state
-      setClasses(prevClasses => [...prevClasses, newClass]);
-      
-      toast.success("Занятие добавлено");
-      return newClass;
-    } catch (error) {
-      console.error('Error in addClass:', error);
-      toast.error("Ошибка при добавлении занятия");
-      throw error;
-    }
-  };
+  const deleteGym = async (gymId: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('gyms')
+      .delete()
+      .eq('id', gymId);
 
-  const updateClass = async (id: string, updates: Partial<FitnessClass>): Promise<FitnessClass> => {
-    const cls = classes.find(c => c.id === id);
-    
-    if (!cls) {
-      throw new Error("Занятие не найдено");
-    }
-    
-    const gym = gyms.find(g => g.id === cls.gymid);
-    
-    if (!gym) {
-      throw new Error("Зал не найден");
-    }
-    
-    if (!currentUser || (currentUser.role !== "PARTNER" && currentUser.role !== "ADMIN")) {
-      throw new Error("Недостаточно прав для обновления занятия");
-    }
-    
-    if (currentUser.role === "PARTNER" && gym.ownerid !== currentUser.id) {
-      throw new Error("Вы можете редактировать занятия только в своих залах");
-    }
-    
-    try {
-      // Convert to database format
-      const dbUpdates: any = {};
-      
-      if ('title' in updates) dbUpdates.name = updates.title;
-      if ('description' in updates) dbUpdates.description = updates.description;
-      if ('instructor' in updates) dbUpdates.instructor = updates.instructor;
-      if ('starttime' in updates) dbUpdates.starttime = updates.starttime;
-      if ('end_time' in updates) dbUpdates.end_time = updates.end_time;
-      if ('category' in updates) dbUpdates.category = updates.category;
-      if ('capacity' in updates) dbUpdates.capacity = updates.capacity;
-      
-      const { data, error } = await supabase
-        .from('classes')
-        .update(dbUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error updating class:', error);
-        throw error;
-      }
-      
-      const updatedClass: FitnessClass = {
-        ...cls,
-        ...updates
-      };
-      
-      // Update local state
-      setClasses(prevClasses => 
-        prevClasses.map(c => c.id === id ? updatedClass : c)
-      );
-      
-      toast.success("Информация о занятии обновлена");
-      return updatedClass;
-    } catch (error) {
-      console.error('Error in updateClass:', error);
-      toast.error("Ошибка при обновлении информации");
-      throw error;
-    }
-  };
-
-  const deleteClass = async (id: string): Promise<boolean> => {
-    const cls = classes.find(c => c.id === id);
-    
-    if (!cls) {
-      throw new Error("Занятие не найдено");
-    }
-    
-    const gym = gyms.find(g => g.id === cls.gymid);
-    
-    if (!gym) {
-      throw new Error("Зал не найден");
-    }
-    
-    if (!currentUser || (currentUser.role !== "PARTNER" && currentUser.role !== "ADMIN")) {
-      throw new Error("Недостаточно прав для удаления занятия");
-    }
-    
-    if (currentUser.role === "PARTNER" && gym.ownerid !== currentUser.id) {
-      throw new Error("Вы можете удалять занятия только в своих залах");
-    }
-    
-    try {
-      // Check if there are existing bookings
-      const { data: bookings, error: bookingsError } = await supabase
-        .from('bookings')
-        .select('id')
-        .eq('class_id', id);
-      
-      if (bookingsError) {
-        console.error('Error checking bookings:', bookingsError);
-        throw bookingsError;
-      }
-      
-      if (bookings && bookings.length > 0) {
-        // Delete all bookings first
-        const { error: deleteBookingsError } = await supabase
-          .from('bookings')
-          .delete()
-          .eq('class_id', id);
-        
-        if (deleteBookingsError) {
-          console.error('Error deleting bookings:', deleteBookingsError);
-          throw deleteBookingsError;
-        }
-      }
-      
-      // Now delete the class
-      const { error } = await supabase
-        .from('classes')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        console.error('Error deleting class:', error);
-        throw error;
-      }
-      
-      // Update local state
-      setClasses(prevClasses => prevClasses.filter(c => c.id !== id));
-      
-      toast.success("Занятие удалено");
-      return true;
-    } catch (error) {
-      console.error('Error in deleteClass:', error);
-      toast.error("Ошибка при удалении занятия");
+    if (error) {
+      console.error("Error deleting gym:", error);
       return false;
     }
+
+    // Optimistically update the local state
+    setGyms((prevGyms) => prevGyms.filter((gym) => gym.id !== gymId));
+    setFilteredGyms((prevFilteredGyms) =>
+      prevFilteredGyms.filter((gym) => gym.id !== gymId)
+    );
+
+    return true;
+  };
+
+   const createSubscription = async (subscription: Omit<Subscription, 'id'>): Promise<Subscription | null> => {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .insert([subscription])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating subscription:", error);
+      return null;
+    }
+
+    // Optimistically update the local state
+    setSubscriptions((prevSubscriptions) => [...prevSubscriptions, data as Subscription]);
+
+    return data as Subscription;
+  };
+
+  const updateSubscription = async (subscriptionId: string, updates: Partial<Subscription>): Promise<void> => {
+    const dbUpdates: Partial<Subscription> = {};
+
+    if ('name' in updates) dbUpdates.name = updates.name;
+    if ('durationDays' in updates) dbUpdates.durationDays = updates.durationDays;
+    if ('price' in updates) dbUpdates.price = updates.price;
+    if ('features' in updates) dbUpdates.features = updates.features;
+    if ('isPopular' in updates) dbUpdates.isPopular = updates.isPopular;
+
+    const { error } = await supabase
+      .from('subscriptions')
+      .update(dbUpdates)
+      .eq('id', subscriptionId);
+
+    if (error) {
+      console.error("Error updating subscription:", error);
+      throw error;
+    }
+
+    // Optimistically update the local state
+    setSubscriptions((prevSubscriptions) =>
+      prevSubscriptions.map((sub) => (sub.id === subscriptionId ? { ...sub, ...updates } : sub))
+    );
+  };
+
+  const deleteSubscription = async (subscriptionId: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('subscriptions')
+      .delete()
+      .eq('id', subscriptionId);
+
+    if (error) {
+      console.error("Error deleting subscription:", error);
+      return false;
+    }
+
+    // Optimistically update the local state
+    setSubscriptions((prevSubscriptions) => prevSubscriptions.filter((sub) => sub.id !== subscriptionId));
+
+    return true;
+  };
+
+  // Provide the context value
+  const value: AppContextType = {
+    gyms,
+    filteredGyms,
+    subscriptions,
+    bookings,
+    filterGyms,
+    getGymById,
+    getClassById,
+    getGymClasses,
+    bookClass,
+    cancelBooking,
+    updateGym,
+    addGym,
+    deleteGym,
+    createSubscription,
+    updateSubscription,
+    deleteSubscription,
   };
 
   return (
-    <AppContext.Provider value={{
-      gyms,
-      classes,
-      subscriptions,
-      filteredGyms,
-      user,
-      bookings,
-      getGymById,
-      getClassById,
-      getGymClasses,
-      filterGyms,
-      bookClass,
-      getUserBookings,
-      cancelBooking,
-      addGym,
-      updateGym,
-      addClass,
-      updateClass,
-      deleteClass
-    }}>
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );
+};
+
+// Create a hook to use the context
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (context === null) {
+    throw new Error("useApp must be used within an AppProvider");
+  }
+  return context;
 };

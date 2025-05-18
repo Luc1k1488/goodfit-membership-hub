@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { User } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
@@ -99,7 +98,7 @@ export const useAuthState = () => {
       authInitialized,
       userExists: !!currentUser,
       role: userRole,
-      userId: currentUser?.id
+      user_id: currentUser?.id
     });
   }, [isLoading, authInitialized, currentUser, userRole]);
 

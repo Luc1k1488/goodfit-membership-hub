@@ -52,8 +52,8 @@ const GymsPage = () => {
     setSearchQuery(query);
   };
 
-  const handleGymClick = (gymId: string) => {
-    navigate(`/gyms/${gymId}`);
+  const handleGymClick = (gym_id: string) => {
+    navigate(`/gyms/${gym_id}`);
   };
   
   // Создаем компоненты для боковой панели и основного контента

@@ -74,7 +74,7 @@ const PartnerDashboardPage = () => {
     title: "",
     description: "",
     instructor: "",
-    starttime: "", // Changed from startTime
+    start_time: "", // Changed from startTime
     end_time: "", // Changed from endTime
     category: "Фитнес",
     capacity: 20
@@ -150,7 +150,7 @@ const PartnerDashboardPage = () => {
             title: cls.title,
             description: cls.description,
             instructor: cls.instructor,
-            starttime: cls.starttime, // Changed from startTime
+            start_time: cls.starttime, // Changed from startTime
             end_time: cls.end_time, // Changed from endTime
             category: cls.category,
             capacity: cls.capacity,
@@ -221,12 +221,12 @@ const PartnerDashboardPage = () => {
   // Handle adding a new class
   const handleAddClass = async () => {
     try {
-      const startDateTime = new Date(newClass.starttime);
+      const startDateTime = new Date(newClass.start_time);
       const endDateTime = new Date(newClass.end_time);
       
       const classToAdd = {
         ...newClass,
-        starttime: startDateTime.toISOString(), // Changed from startTime
+        start_time: startDateTime.toISOString(), // Changed from startTime
         end_time: endDateTime.toISOString() // Changed from endTime
       };
       
@@ -436,8 +436,8 @@ const PartnerDashboardPage = () => {
                       <label className="text-sm font-medium">Дата и время начала</label>
                       <Input 
                         type="datetime-local" 
-                        value={newClass.starttime} 
-                        onChange={e => setNewClass({...newClass, starttime: e.target.value})}
+                        value={newClass.start_time} 
+                        onChange={e => setNewClass({...newClass, start_time: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
@@ -483,7 +483,7 @@ const PartnerDashboardPage = () => {
                   <Button 
                     onClick={handleAddClass} 
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-                    disabled={!newClass.title || !newClass.gymid || !newClass.starttime || !newClass.end_time}
+                    disabled={!newClass.title || !newClass.gymid || !newClass.start_time || !newClass.end_time}
                   >
                     Добавить занятие
                   </Button>
@@ -604,7 +604,7 @@ const PartnerDashboardPage = () => {
                 )
                 .map(cls => {
                   const gymName = partnerGyms.find(gym => gym.id === cls.gymid)?.name || "";
-                  const startTime = parseISO(cls.starttime);
+                  const startTime = parseISO(cls.start_time);
                   const endTime = parseISO(cls.end_time);
                   
                   return (

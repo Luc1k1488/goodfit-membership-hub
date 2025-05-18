@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Toaster as Sonner } from "sonner";
@@ -49,7 +50,7 @@ const AppRoutes = () => {
         } 
       />
       <Route 
-        path="/booking/:gymId/:classId" 
+        path="/booking/:gym_id/:class_id" 
         element={
           <ProtectedRoute>
             <BookingPage />

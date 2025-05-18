@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,7 +49,7 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
       
       <CardContent className="px-6 pb-6">
         <ul className="space-y-2">
-          {subscription.features.map((feature, index) => (
+          {subscription.features?.map((feature, index) => (
             <li key={index} className="flex">
               <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
               <span>{feature}</span>
