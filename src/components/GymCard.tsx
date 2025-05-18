@@ -7,11 +7,20 @@ import { Star } from "lucide-react";
 
 interface GymCardProps {
   gym: Gym;
+  onClick?: () => void;
 }
 
-export function GymCard({ gym }: GymCardProps) {
+export function GymCard({ gym, onClick }: GymCardProps) {
+  const CardWrapper = onClick ? 
+    ({ children }: { children: React.ReactNode }) => (
+      <div onClick={onClick} className="cursor-pointer">{children}</div>
+    ) : 
+    ({ children }: { children: React.ReactNode }) => (
+      <Link to={`/gyms/${gym.id}`}>{children}</Link>
+    );
+
   return (
-    <Link to={`/gyms/${gym.id}`}>
+    <CardWrapper>
       <Card className="overflow-hidden transition-all hover:shadow-lg rounded-xl">
         <div className="relative aspect-video overflow-hidden">
           <img
@@ -49,6 +58,6 @@ export function GymCard({ gym }: GymCardProps) {
           </div>
         </CardFooter>
       </Card>
-    </Link>
+    </CardWrapper>
   );
 }
