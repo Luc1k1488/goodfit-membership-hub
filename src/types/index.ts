@@ -1,3 +1,4 @@
+
 // User types
 export type UserRole = 'USER' | 'PARTNER' | 'ADMIN';
 

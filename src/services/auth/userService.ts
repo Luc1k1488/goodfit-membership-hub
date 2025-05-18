@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabaseClient";
 import { User } from "@/types";
 import { isEmail, formatPhoneNumber } from "./formatUtils";
@@ -68,9 +69,9 @@ export const getUserOrCreate = async (userId: string, userData: {
         email: existingUserById.email || userData.email || '',
         phone: existingUserById.phone || userData.phone || '',
         role: (existingUserById.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
-        createdAt: existingUserById.created_at,
-        profileImage: existingUserById.profile_image || '/placeholder.svg',
-        subscriptionId: existingUserById.subscription_id || null
+        created_at: existingUserById.created_at,
+        profile_image: existingUserById.profile_image || '/placeholder.svg',
+        subscription_id: existingUserById.subscription_id || null
       };
 
       return user;
@@ -132,9 +133,9 @@ export const getUserOrCreate = async (userId: string, userData: {
           email: existingUserByEmail.email || userData.email || '',
           phone: existingUserByEmail.phone || userData.phone || '',
           role: (existingUserByEmail.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
-          createdAt: existingUserByEmail.created_at,
-          profileImage: existingUserByEmail.profile_image || '/placeholder.svg',
-          subscriptionId: existingUserByEmail.subscription_id || null
+          created_at: existingUserByEmail.created_at,
+          profile_image: existingUserByEmail.profile_image || '/placeholder.svg',
+          subscription_id: existingUserByEmail.subscription_id || null
         };
 
         return user;
@@ -182,9 +183,9 @@ export const getUserOrCreate = async (userId: string, userData: {
         email: retryUser.email || '',
         phone: retryUser.phone || '',
         role: (retryUser.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
-        createdAt: retryUser.created_at,
-        profileImage: retryUser.profile_image || '/placeholder.svg',
-        subscriptionId: retryUser.subscription_id || null
+        created_at: retryUser.created_at,
+        profile_image: retryUser.profile_image || '/placeholder.svg',
+        subscription_id: retryUser.subscription_id || null
       };
 
       return user;
@@ -202,9 +203,9 @@ export const getUserOrCreate = async (userId: string, userData: {
       email: newUser.email || '',
       phone: newUser.phone || '',
       role: (newUser.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
-      createdAt: newUser.created_at,
-      profileImage: newUser.profile_image || '/placeholder.svg',
-      subscriptionId: newUser.subscription_id || null
+      created_at: newUser.created_at,
+      profile_image: newUser.profile_image || '/placeholder.svg',
+      subscription_id: newUser.subscription_id || null
     };
 
     return user;
@@ -297,7 +298,7 @@ export const getCurrentUserSession = async (): Promise<{
         name: userData.name || '',
         email: userData.email || null,
         phone: userData.phone || null,
-        role: userData.role as UserRole,
+        role: userData.role as "USER" | "PARTNER" | "ADMIN",
         created_at: userData.created_at,
         profile_image: userData.profile_image || null,
         subscription_id: userData.subscription_id
