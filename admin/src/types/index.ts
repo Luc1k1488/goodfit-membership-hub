@@ -27,7 +27,7 @@ export interface Gym {
   };
   mainImage: string;
   images: string[];
-  ownerId: string;
+  ownerid: string;
   rating: number;
   reviewCount: number;
   features: string[];

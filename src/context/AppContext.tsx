@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Gym, FitnessClass, Subscription, User, Booking } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
@@ -73,7 +74,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
           workingHours: gym.working_hours,
           rating: gym.rating,
           reviewCount: gym.review_count,
-          ownerId: gym.owner_id
+          ownerid: gym.ownerid
         }));
         setGyms(formattedGyms);
         setFilteredGyms(formattedGyms);
@@ -84,18 +85,18 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
         .select('*')
-        .gt('start_time', now.toISOString());
+        .gt('starttime', now.toISOString());
       
       if (classesError) {
         console.error('Error fetching classes:', classesError);
       } else if (classesData) {
         const formattedClasses: FitnessClass[] = classesData.map(cls => ({
           id: cls.id,
-          gymId: cls.gym_id,
-          title: cls.title,
+          gymId: cls.gymid,
+          title: cls.name,
           description: cls.description,
           instructor: cls.instructor,
-          startTime: cls.start_time,
+          startTime: cls.starttime,
           endTime: cls.end_time,
           category: cls.category,
           capacity: cls.capacity,
@@ -147,9 +148,9 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     const { data, error } = await supabase
       .from('classes')
       .select('*')
-      .eq('gym_id', gymId)
-      .gt('start_time', now.toISOString())
-      .order('start_time', { ascending: true });
+      .eq('gymid', gymId)
+      .gt('starttime', now.toISOString())
+      .order('starttime', { ascending: true });
     
     if (error) {
       console.error('Error fetching gym classes:', error);
@@ -158,11 +159,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     
     return data.map(cls => ({
       id: cls.id,
-      gymId: cls.gym_id,
-      title: cls.title,
+      gymId: cls.gymid,
+      title: cls.name,
       description: cls.description,
       instructor: cls.instructor,
-      startTime: cls.start_time,
+      startTime: cls.starttime,
       endTime: cls.end_time,
       category: cls.category,
       capacity: cls.capacity,
@@ -303,15 +304,15 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         status: booking.status,
         dateTime: booking.date_time,
         createdAt: booking.created_at,
-        className: booking.classes.title,
+        className: booking.classes.name,
         gymName: booking.gyms.name,
         class: {
           id: booking.classes.id,
-          gymId: booking.classes.gym_id,
-          title: booking.classes.title,
+          gymId: booking.classes.gymid,
+          title: booking.classes.name,
           description: booking.classes.description,
           instructor: booking.classes.instructor,
-          startTime: booking.classes.start_time,
+          startTime: booking.classes.starttime,
           endTime: booking.classes.end_time,
           category: booking.classes.category,
           capacity: booking.classes.capacity,
@@ -408,7 +409,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
             working_hours: gym.workingHours,
             rating: 0,
             review_count: 0,
-            owner_id: currentUser.id
+            ownerid: currentUser.id
           }
         ])
         .select()
@@ -433,7 +434,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         workingHours: data.working_hours,
         rating: data.rating,
         reviewCount: data.review_count,
-        ownerId: data.owner_id
+        ownerid: data.ownerid
       };
       
       // Update local state
@@ -460,7 +461,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       throw new Error("Недостаточно прав для обновления зала");
     }
     
-    if (currentUser.role === "PARTNER" && gym.ownerId !== currentUser.id) {
+    if (currentUser.role === "PARTNER" && gym.ownerid !== currentUser.id) {
       throw new Error("Вы можете редактировать только свои залы");
     }
     
@@ -524,7 +525,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       throw new Error("Недостаточно прав для добавления занятия");
     }
     
-    if (currentUser.role === "PARTNER" && gym.ownerId !== currentUser.id) {
+    if (currentUser.role === "PARTNER" && gym.ownerid !== currentUser.id) {
       throw new Error("Вы можете добавлять занятия только в свои залы");
     }
     
@@ -533,11 +534,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         .from('classes')
         .insert([
           {
-            gym_id: classData.gymId,
-            title: classData.title,
+            gymid: classData.gymId,
+            name: classData.title,
             description: classData.description,
             instructor: classData.instructor,
-            start_time: classData.startTime,
+            starttime: classData.startTime,
             end_time: classData.endTime,
             category: classData.category,
             capacity: classData.capacity,
@@ -554,11 +555,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       
       const newClass: FitnessClass = {
         id: data.id,
-        gymId: data.gym_id,
-        title: data.title,
+        gymId: data.gymid,
+        title: data.name,
         description: data.description,
         instructor: data.instructor,
-        startTime: data.start_time,
+        startTime: data.starttime,
         endTime: data.end_time,
         category: data.category,
         capacity: data.capacity,
@@ -594,7 +595,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       throw new Error("Недостаточно прав для обновления занятия");
     }
     
-    if (currentUser.role === "PARTNER" && gym.ownerId !== currentUser.id) {
+    if (currentUser.role === "PARTNER" && gym.ownerid !== currentUser.id) {
       throw new Error("Вы можете редактировать занятия только в своих залах");
     }
     
@@ -602,10 +603,10 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       // Convert to database format
       const dbUpdates: any = {};
       
-      if ('title' in updates) dbUpdates.title = updates.title;
+      if ('title' in updates) dbUpdates.name = updates.title;
       if ('description' in updates) dbUpdates.description = updates.description;
       if ('instructor' in updates) dbUpdates.instructor = updates.instructor;
-      if ('startTime' in updates) dbUpdates.start_time = updates.startTime;
+      if ('startTime' in updates) dbUpdates.starttime = updates.startTime;
       if ('endTime' in updates) dbUpdates.end_time = updates.endTime;
       if ('category' in updates) dbUpdates.category = updates.category;
       if ('capacity' in updates) dbUpdates.capacity = updates.capacity;
@@ -658,7 +659,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       throw new Error("Недостаточно прав для удаления занятия");
     }
     
-    if (currentUser.role === "PARTNER" && gym.ownerId !== currentUser.id) {
+    if (currentUser.role === "PARTNER" && gym.ownerid !== currentUser.id) {
       throw new Error("Вы можете удалять занятия только в своих залах");
     }
     

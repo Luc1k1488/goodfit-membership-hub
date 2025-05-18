@@ -1,354 +1,364 @@
+import { Gym, FitnessClass, Booking, User, Review, Subscription } from '@/types';
 
-import { User, Gym, FitnessClass, Subscription, Booking } from "@/types";
-
-// Mock Users Data
-export const usersData: User[] = [
+// Mock Users
+export const MOCK_USERS: User[] = [
   {
-    id: "user_1",
-    name: "John Doe",
-    phone: "9001234567",
-    email: "john@example.com",
+    id: "user-1",
+    name: "Александр Петров",
+    email: "alex@example.com",
+    phone: "+7 (913) 123-4567",
     role: "USER",
-    createdAt: "2023-05-10T08:00:00Z",
-    profileImage: "/placeholder.svg"
+    createdAt: "2023-05-15T10:00:00Z",
+    profileImage: "https://randomuser.me/api/portraits/men/32.jpg",
   },
   {
-    id: "user_2",
-    name: "Jane Smith",
-    phone: "9009876543",
-    email: "jane@example.com",
+    id: "user-2",
+    name: "Екатерина Смирнова",
+    email: "ekaterina@example.com",
+    phone: "+7 (926) 987-6543",
     role: "USER",
-    subscriptionId: "sub_1",
-    createdAt: "2023-06-15T10:30:00Z",
-    profileImage: "/placeholder.svg"
+    createdAt: "2023-06-20T14:30:00Z",
+    profileImage: "https://randomuser.me/api/portraits/women/44.jpg",
   },
   {
-    id: "partner_1",
-    name: "Alex Johnson",
-    phone: "9007654321",
-    email: "alex@fitgym.com",
+    id: "partner-1",
+    name: "Фитнес Плюс",
+    email: "fitness@example.com",
+    phone: "+7 (495) 111-2233",
     role: "PARTNER",
-    createdAt: "2023-04-20T09:15:00Z",
-    profileImage: "/placeholder.svg"
+    createdAt: "2023-04-10T09:15:00Z",
+    profileImage: "/fitness-plus-logo.png",
   },
   {
-    id: "admin_1",
-    name: "Admin User",
-    phone: "9000000000",
-    email: "admin@goodfit.com",
+    id: "admin-1",
+    name: "Админ Системы",
+    email: "admin@goodfit.ru",
+    phone: "+7 (800) 555-3535",
     role: "ADMIN",
     createdAt: "2023-01-01T00:00:00Z",
-    profileImage: "/placeholder.svg"
+    profileImage: "/admin-logo.png",
   }
 ];
 
-// Mock Gyms Data
-export const gymData: Gym[] = [
+// Mock Gyms
+export const MOCK_GYMS: Gym[] = [
   {
-    id: "gym_1",
-    name: "PowerFit Gym",
-    description: "A state-of-the-art fitness center with the latest equipment and professional trainers.",
-    category: ["gym", "weights", "cardio"],
-    city: "Moscow",
-    address: "123 Fitness St., Moscow",
-    location: { lat: 55.751244, lng: 37.618423 },
-    mainImage: "/placeholder.svg",
-    images: ["/placeholder.svg", "/placeholder.svg"],
-    ownerId: "partner_1",
+    id: "gym-1",
+    name: "Фитнес-центр 'Олимп'",
+    description: "Современный фитнес-клуб с полным спектром услуг",
+    category: ["Тренажерный зал", "Групповые занятия", "Бассейн"],
+    city: "Москва",
+    address: "ул. Тверская, 18",
+    location: {
+      lat: 55.767539,
+      lng: 37.604673
+    },
+    mainImage: "https://via.placeholder.com/800x600?text=Olimp+Gym",
+    images: [
+      "https://via.placeholder.com/800x600?text=Olimp+Gym+1",
+      "https://via.placeholder.com/800x600?text=Olimp+Gym+2",
+      "https://via.placeholder.com/800x600?text=Olimp+Gym+3"
+    ],
+    ownerid: "partner-1",
     rating: 4.8,
-    reviewCount: 156,
-    features: ["24/7 Access", "Personal Trainers", "Showers", "Lockers"],
-    workingHours: { open: "06:00", close: "23:00" }
+    reviewCount: 124,
+    features: ["Парковка", "Сауна", "Душевые", "Шкафчики", "Wi-Fi"],
+    workingHours: {
+      open: "07:00",
+      close: "23:00"
+    }
   },
   {
-    id: "gym_2",
-    name: "ZenYoga Studio",
-    description: "Find your inner peace in our tranquil yoga studio with experienced instructors.",
-    category: ["yoga", "meditation", "pilates"],
-    city: "Moscow",
-    address: "456 Zen Way, Moscow",
-    location: { lat: 55.761244, lng: 37.628423 },
-    mainImage: "/placeholder.svg",
-    images: ["/placeholder.svg", "/placeholder.svg"],
-    ownerId: "partner_1",
-    rating: 4.9,
-    reviewCount: 98,
-    features: ["Mats Provided", "Meditation Area", "Certified Instructors"],
-    workingHours: { open: "08:00", close: "21:00" }
-  },
-  {
-    id: "gym_3",
-    name: "AquaSwim Center",
-    description: "Olympic-size swimming pool with lanes for all skill levels and professional coaches.",
-    category: ["pool", "swimming", "aqua aerobics"],
-    city: "Moscow",
-    address: "789 Aqua Blvd., Moscow",
-    location: { lat: 55.741244, lng: 37.608423 },
-    mainImage: "/placeholder.svg",
-    images: ["/placeholder.svg", "/placeholder.svg"],
-    ownerId: "partner_1",
-    rating: 4.7,
-    reviewCount: 112,
-    features: ["Olympic Pool", "Swimming Lessons", "Sauna", "Towel Service"],
-    workingHours: { open: "07:00", close: "22:00" }
-  },
-  {
-    id: "gym_4",
-    name: "Boxing Academy",
-    description: "Professional boxing training for all levels from beginners to competitive athletes.",
-    category: ["boxing", "martial arts", "fitness"],
-    city: "Saint Petersburg",
-    address: "101 Punch Ave, Saint Petersburg",
-    location: { lat: 59.934280, lng: 30.335098 },
-    mainImage: "/placeholder.svg",
-    images: ["/placeholder.svg", "/placeholder.svg"],
-    ownerId: "partner_1",
+    id: "gym-2",
+    name: "Фитнес-студия 'Энергия'",
+    description: "Специализированная студия групповых программ",
+    category: ["Групповые занятия", "Йога", "Пилатес"],
+    city: "Москва",
+    address: "ул. Ленина, 42",
+    location: {
+      lat: 55.751244,
+      lng: 37.618423
+    },
+    mainImage: "https://via.placeholder.com/800x600?text=Energy+Studio",
+    images: [
+      "https://via.placeholder.com/800x600?text=Energy+Studio+1",
+      "https://via.placeholder.com/800x600?text=Energy+Studio+2"
+    ],
+    ownerid: "partner-1",
     rating: 4.6,
     reviewCount: 87,
-    features: ["Boxing Rings", "Training Equipment", "Professional Coaches"],
-    workingHours: { open: "09:00", close: "22:00" }
+    features: ["Душевые", "Шкафчики", "Wi-Fi"],
+    workingHours: {
+      open: "08:00",
+      close: "22:00"
+    }
   },
   {
-    id: "gym_5",
-    name: "Crossfit Arena",
-    description: "High-intensity functional training in a supportive community environment.",
-    category: ["crossfit", "weights", "fitness"],
-    city: "Saint Petersburg",
-    address: "202 Lifting St., Saint Petersburg",
-    location: { lat: 59.944280, lng: 30.345098 },
-    mainImage: "/placeholder.svg",
-    images: ["/placeholder.svg", "/placeholder.svg"],
-    ownerId: "partner_1",
-    rating: 4.5,
-    reviewCount: 143,
-    features: ["Crossfit Equipment", "Group Classes", "Personal Training"],
-    workingHours: { open: "06:00", close: "23:00" }
+    id: "gym-3",
+    name: "Тренажёрный зал 'Сила'",
+    description: "Специализированный зал для силовых тренировок",
+    category: ["Тренажерный зал", "Кроссфит"],
+    city: "Санкт-Петербург",
+    address: "пр. Невский, 78",
+    location: {
+      lat: 59.932642,
+      lng: 30.361144
+    },
+    mainImage: "https://via.placeholder.com/800x600?text=Power+Gym",
+    images: [
+      "https://via.placeholder.com/800x600?text=Power+Gym+1",
+      "https://via.placeholder.com/800x600?text=Power+Gym+2",
+      "https://via.placeholder.com/800x600?text=Power+Gym+3"
+    ],
+    ownerid: "partner-1",
+    rating: 4.7,
+    reviewCount: 92,
+    features: ["Парковка", "Душевые", "Шкафчики"],
+    workingHours: {
+      open: "06:00",
+      close: "23:00"
+    }
   },
   {
-    id: "gym_6",
-    name: "Dance Studio",
-    description: "Express yourself through dance with a variety of styles and expert instructors.",
-    category: ["dance", "fitness", "ballet"],
-    city: "Kazan",
-    address: "303 Dance Way, Kazan",
-    location: { lat: 55.796289, lng: 49.108795 },
-    mainImage: "/placeholder.svg",
-    images: ["/placeholder.svg", "/placeholder.svg"],
-    ownerId: "partner_1",
+    id: "gym-4",
+    name: "Йога-студия 'Гармония'",
+    description: "Уютная студия для практики йоги и медитации",
+    category: ["Йога", "Медитация", "Пилатес"],
+    city: "Санкт-Петербург",
+    address: "ул. Восточная, 15",
+    location: {
+      lat: 59.942642,
+      lng: 30.351144
+    },
+    mainImage: "https://via.placeholder.com/800x600?text=Harmony+Yoga",
+    images: [
+      "https://via.placeholder.com/800x600?text=Harmony+Yoga+1",
+      "https://via.placeholder.com/800x600?text=Harmony+Yoga+2"
+    ],
+    ownerid: "partner-1",
     rating: 4.9,
-    reviewCount: 76,
-    features: ["Dance Floors", "Multiple Studios", "Professional Sound System"],
-    workingHours: { open: "10:00", close: "22:00" }
+    reviewCount: 65,
+    features: ["Душевые", "Шкафчики", "Чай"],
+    workingHours: {
+      open: "09:00",
+      close: "21:00"
+    }
+  },
+  {
+    id: "gym-5",
+    name: "Спортивный центр 'Чемпион'",
+    description: "Многофункциональный спортивный комплекс для всей семьи",
+    category: ["Тренажерный зал", "Бассейн", "Игровые виды спорта"],
+    city: "Казань",
+    address: "пр. Победы, 50",
+    location: {
+      lat: 55.788746,
+      lng: 49.122325
+    },
+    mainImage: "https://via.placeholder.com/800x600?text=Champion",
+    images: [
+      "https://via.placeholder.com/800x600?text=Champion+1",
+      "https://via.placeholder.com/800x600?text=Champion+2",
+      "https://via.placeholder.com/800x600?text=Champion+3"
+    ],
+    ownerid: "partner-1",
+    rating: 4.5,
+    reviewCount: 118,
+    features: ["Парковка", "Сауна", "Душевые", "Шкафчики", "Wi-Fi", "Кафе"],
+    workingHours: {
+      open: "07:00",
+      close: "22:00"
+    }
+  },
+  {
+    id: "gym-6",
+    name: "Танцевальная студия 'Ритм'",
+    description: "Студия современных танцевальных направлений",
+    category: ["Танцы", "Групповые занятия"],
+    city: "Москва",
+    address: "ул. Садовая, 33",
+    location: {
+      lat: 55.762613,
+      lng: 37.621913
+    },
+    mainImage: "https://via.placeholder.com/800x600?text=Rhythm+Dance",
+    images: [
+      "https://via.placeholder.com/800x600?text=Rhythm+Dance+1",
+      "https://via.placeholder.com/800x600?text=Rhythm+Dance+2"
+    ],
+    ownerid: "partner-1",
+    rating: 4.7,
+    reviewCount: 53,
+    features: ["Душевые", "Шкафчики", "Wi-Fi"],
+    workingHours: {
+      open: "10:00",
+      close: "22:00"
+    }
   }
 ];
 
-// Mock Classes Data
-export const classesData: FitnessClass[] = [
+// Mock Fitness Classes
+export const MOCK_CLASSES: FitnessClass[] = [
   {
-    id: "class_1",
-    gymId: "gym_1",
-    title: "Morning Power Workout",
-    description: "Start your day with an energizing full-body workout to boost your metabolism.",
-    instructor: "Mike Johnson",
-    startTime: "2023-07-01T07:00:00Z",
-    endTime: "2023-07-01T08:00:00Z",
-    capacity: 15,
-    bookedCount: 8,
-    category: "weights"
-  },
-  {
-    id: "class_2",
-    gymId: "gym_1",
-    title: "HIIT Challenge",
-    description: "High-intensity interval training to burn maximum calories in minimum time.",
-    instructor: "Sarah Williams",
-    startTime: "2023-07-01T18:30:00Z",
-    endTime: "2023-07-01T19:30:00Z",
-    capacity: 12,
-    bookedCount: 12,
-    category: "cardio"
-  },
-  {
-    id: "class_3",
-    gymId: "gym_2",
-    title: "Vinyasa Flow Yoga",
-    description: "Dynamic yoga sequence linking breath with movement for all skill levels.",
-    instructor: "Lily Chen",
-    startTime: "2023-07-02T09:00:00Z",
-    endTime: "2023-07-02T10:15:00Z",
+    id: "class-1",
+    gymId: "gym-1",
+    title: "Функциональный тренинг",
+    description: "Высокоинтенсивная тренировка для всего тела",
+    instructor: "Иванов Петр",
+    startTime: "2024-03-15T18:00:00Z",
+    endTime: "2024-03-15T19:00:00Z",
     capacity: 20,
-    bookedCount: 15,
-    category: "yoga"
+    bookedCount: 8,
+    category: "Функциональный тренинг"
   },
   {
-    id: "class_4",
-    gymId: "gym_2",
-    title: "Meditation & Mindfulness",
-    description: "Guided meditation session to reduce stress and improve mental clarity.",
-    instructor: "David Ross",
-    startTime: "2023-07-02T19:00:00Z",
-    endTime: "2023-07-02T20:00:00Z",
-    capacity: 25,
-    bookedCount: 10,
-    category: "meditation"
+    id: "class-2",
+    gymId: "gym-1",
+    title: "Йога для начинающих",
+    description: "Мягкая практика для развития гибкости и баланса",
+    instructor: "Сидорова Анна",
+    startTime: "2024-03-16T10:00:00Z",
+    endTime: "2024-03-16T11:30:00Z",
+    capacity: 15,
+    bookedCount: 12,
+    category: "Йога"
   },
   {
-    id: "class_5",
-    gymId: "gym_3",
-    title: "Advanced Swim Technique",
-    description: "Improve your swimming technique with professional coaching.",
-    instructor: "Emma Watson",
-    startTime: "2023-07-03T16:00:00Z",
-    endTime: "2023-07-03T17:30:00Z",
+    id: "class-3",
+    gymId: "gym-2",
+    title: "Пилатес",
+    description: "Укрепление мышц кора и улучшение осанки",
+    instructor: "Козлова Ольга",
+    startTime: "2024-03-17T12:00:00Z",
+    endTime: "2024-03-17T13:00:00Z",
     capacity: 10,
     bookedCount: 7,
-    category: "swimming"
+    category: "Пилатес"
   },
   {
-    id: "class_6",
-    gymId: "gym_3",
-    title: "Aqua Aerobics",
-    description: "Low-impact, high-energy water workout suitable for all fitness levels.",
-    instructor: "Tom Baker",
-    startTime: "2023-07-03T18:00:00Z",
-    endTime: "2023-07-03T19:00:00Z",
-    capacity: 15,
-    bookedCount: 9,
-    category: "aqua aerobics"
-  },
-  {
-    id: "class_7",
-    gymId: "gym_4",
-    title: "Boxing Fundamentals",
-    description: "Learn the basics of boxing technique, footwork, and combinations.",
-    instructor: "Jack Hammer",
-    startTime: "2023-07-04T17:00:00Z",
-    endTime: "2023-07-04T18:30:00Z",
-    capacity: 10,
-    bookedCount: 5,
-    category: "boxing"
-  },
-  {
-    id: "class_8",
-    gymId: "gym_5",
-    title: "Crossfit WOD",
-    description: "Workout of the day featuring varied functional movements at high intensity.",
-    instructor: "Chris Power",
-    startTime: "2023-07-04T19:00:00Z",
-    endTime: "2023-07-04T20:00:00Z",
+    id: "class-4",
+    gymId: "gym-3",
+    title: "Кроссфит",
+    description: "Комплексная тренировка на силу и выносливость",
+    instructor: "Смирнов Алексей",
+    startTime: "2024-03-18T19:00:00Z",
+    endTime: "2024-03-18T20:00:00Z",
     capacity: 12,
-    bookedCount: 11,
-    category: "crossfit"
+    bookedCount: 10,
+    category: "Кроссфит"
   },
   {
-    id: "class_9",
-    gymId: "gym_6",
-    title: "Hip-Hop Dance",
-    description: "Learn popular hip-hop choreography in a fun, high-energy environment.",
-    instructor: "Maria Lopez",
-    startTime: "2023-07-05T18:00:00Z",
-    endTime: "2023-07-05T19:30:00Z",
-    capacity: 18,
-    bookedCount: 12,
-    category: "dance"
+    id: "class-5",
+    gymId: "gym-4",
+    title: "Медитация",
+    description: "Практика осознанности и релаксации",
+    instructor: "Морозова Елена",
+    startTime: "2024-03-19T08:00:00Z",
+    endTime: "2024-03-19T09:00:00Z",
+    capacity: 8,
+    bookedCount: 6,
+    category: "Медитация"
+  },
+  {
+    id: "class-6",
+    gymId: "gym-5",
+    title: "Аквааэробика",
+    description: "Эффективная тренировка в воде",
+    instructor: "Павлова Светлана",
+    startTime: "2024-03-20T11:00:00Z",
+    endTime: "2024-03-20T12:00:00Z",
+    capacity: 15,
+    bookedCount: 13,
+    category: "Аквааэробика"
+  },
+  {
+    id: "class-7",
+    gymId: "gym-6",
+    title: "Современные танцы",
+    description: "Изучение различных танцевальных стилей",
+    instructor: "Андреева Юлия",
+    startTime: "2024-03-21T17:00:00Z",
+    endTime: "2024-03-21T18:30:00Z",
+    capacity: 10,
+    bookedCount: 9,
+    category: "Танцы"
   }
 ];
 
-// Mock Subscriptions Data
-export const subscriptionsData: Subscription[] = [
+// Mock Bookings
+export const MOCK_BOOKINGS: Booking[] = [
   {
-    id: "sub_1",
-    name: "30-Day Pass",
-    durationDays: 30,
-    price: 4800,
-    features: [
-      "Access to all partner gyms",
-      "Unlimited class bookings",
-      "No long-term commitment"
-    ]
+    id: "booking-1",
+    userId: "user-1",
+    classId: "class-1",
+    gymId: "gym-1",
+    status: "BOOKED",
+    dateTime: "2024-03-15T18:00:00Z"
   },
   {
-    id: "sub_2",
-    name: "90-Day Pass",
-    durationDays: 90,
-    price: 12600,
-    features: [
-      "Access to all partner gyms",
-      "Unlimited class bookings",
-      "Priority booking window",
-      "16% discount vs monthly"
-    ],
+    id: "booking-2",
+    userId: "user-2",
+    classId: "class-2",
+    gymId: "gym-1",
+    status: "BOOKED",
+    dateTime: "2024-03-16T10:00:00Z"
+  },
+  {
+    id: "booking-3",
+    userId: "user-1",
+    classId: "class-3",
+    gymId: "gym-2",
+    status: "BOOKED",
+    dateTime: "2024-03-17T12:00:00Z"
+  }
+];
+
+// Mock Reviews
+export const MOCK_REVIEWS: Review[] = [
+  {
+    id: "review-1",
+    userId: "user-1",
+    gymId: "gym-1",
+    userName: "Александр Петров",
+    rating: 5,
+    comment: "Отличный фитнес-центр, все на высшем уровне!",
+    date: "2024-03-10T12:00:00Z"
+  },
+  {
+    id: "review-2",
+    userId: "user-2",
+    gymId: "gym-1",
+    userName: "Екатерина Смирнова",
+    rating: 4,
+    comment: "Хорошие тренеры и современное оборудование.",
+    date: "2024-03-09T15:00:00Z"
+  }
+];
+
+// Mock Subscriptions
+export const MOCK_SUBSCRIPTIONS: Subscription[] = [
+  {
+    id: "sub-1",
+    name: "Базовый",
+    durationDays: 30,
+    price: 1500,
+    features: ["Тренажерный зал"],
     isPopular: true
   },
   {
-    id: "sub_3",
-    name: "180-Day Pass",
-    durationDays: 180,
-    price: 23400,
-    features: [
-      "Access to all partner gyms",
-      "Unlimited class bookings",
-      "Priority booking window",
-      "Free guest pass each month",
-      "19% discount vs monthly"
-    ]
+    id: "sub-2",
+    name: "Стандарт",
+    durationDays: 90,
+    price: 4000,
+    features: ["Тренажерный зал", "Групповые занятия"],
+    isPopular: false
   },
   {
-    id: "sub_4",
-    name: "365-Day Pass",
+    id: "sub-3",
+    name: "Премиум",
     durationDays: 365,
-    price: 42000,
-    features: [
-      "Access to all partner gyms",
-      "Unlimited class bookings",
-      "Priority booking window",
-      "Free guest pass each month",
-      "Personal fitness consultation",
-      "28% discount vs monthly"
-    ]
-  }
-];
-
-// Mock Bookings Data
-export const bookingsData: Booking[] = [
-  {
-    id: "booking_1",
-    userId: "user_1",
-    classId: "class_1",
-    gymId: "gym_1",
-    className: "Morning Power Workout",
-    gymName: "PowerFit Gym",
-    status: "COMPLETED",
-    dateTime: "2023-06-28T07:00:00Z"
-  },
-  {
-    id: "booking_2",
-    userId: "user_1",
-    classId: "class_3",
-    gymId: "gym_2",
-    className: "Vinyasa Flow Yoga",
-    gymName: "ZenYoga Studio",
-    status: "BOOKED",
-    dateTime: "2023-07-02T09:00:00Z"
-  },
-  {
-    id: "booking_3",
-    userId: "user_2",
-    classId: "class_5",
-    gymId: "gym_3",
-    className: "Advanced Swim Technique",
-    gymName: "AquaSwim Center",
-    status: "BOOKED",
-    dateTime: "2023-07-03T16:00:00Z"
-  },
-  {
-    id: "booking_4",
-    userId: "user_2",
-    classId: "class_7",
-    gymId: "gym_4",
-    className: "Boxing Fundamentals",
-    gymName: "Boxing Academy",
-    status: "CANCELLED",
-    dateTime: "2023-07-04T17:00:00Z"
+    price: 15000,
+    features: ["Тренажерный зал", "Групповые занятия", "Бассейн", "Сауна"],
+    isPopular: false
   }
 ];

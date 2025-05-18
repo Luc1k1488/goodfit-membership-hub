@@ -489,7 +489,6 @@ const GymsPage = () => {
   );
 };
 
-// Add Label component import
 import { Label } from "@/components/ui/label";
 
 export default GymsPage;
