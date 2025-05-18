@@ -1,4 +1,3 @@
-
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -51,7 +50,7 @@ const GymDetailPage = () => {
       {/* Gym Images */}
       <div className="relative mb-4">
         <img 
-          src={gym.mainImage} 
+          src={gym.main_image} 
           alt={gym.name} 
           className="object-cover w-full h-56"
         />
@@ -72,7 +71,7 @@ const GymDetailPage = () => {
           </div>
           <div className="flex items-center text-sm text-gray-500">
             <Clock className="w-4 h-4 mr-1" />
-            {gym.workingHours?.open} - {gym.workingHours?.close}
+            {gym.working_hours?.open} - {gym.working_hours?.close}
           </div>
         </div>
         
@@ -119,7 +118,7 @@ const GymDetailPage = () => {
               
               <h3 className="mt-6 mb-3 text-lg font-medium">Особенности</h3>
               <ul className="grid grid-cols-2 gap-2">
-                {gym.features?.map((feature, index) => (
+                {gym.features && gym.features?.map((feature, index) => (
                   <li key={index} className="flex items-center">
                     <div className="w-2 h-2 mr-2 bg-goodfit-secondary rounded-full"></div>
                     {feature}
@@ -141,7 +140,7 @@ const GymDetailPage = () => {
                 <Star className="w-6 h-6 text-yellow-400 mr-1 fill-current" />
                 <span className="text-2xl font-bold">{gym.rating}</span>
               </div>
-              <span className="text-gray-600">На основе {gym.reviewCount} отзывов</span>
+              <span className="text-gray-600">На основе {gym.review_count} отзывов</span>
             </div>
             
             <div className="space-y-4">

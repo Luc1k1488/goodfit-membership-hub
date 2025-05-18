@@ -1,4 +1,3 @@
-
 // User types
 export type UserRole = 'USER' | 'PARTNER' | 'ADMIN';
 
@@ -48,6 +47,7 @@ export interface Gym {
     open: string;
     close: string;
   };
+  features?: string[]; // Добавляем поле features, которое указано в коде
 }
 
 // Class and schedule types

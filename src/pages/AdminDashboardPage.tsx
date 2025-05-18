@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,18 +77,19 @@ const AdminDashboardPage = () => {
           email: user.email || '',
           phone: user.phone || '',
           role: user.role as "USER" | "PARTNER" | "ADMIN",
-          createdAt: user.created_at,
-          profileImage: user.profile_image || '/placeholder.svg',
-          subscriptionId: user.subscription_id
+          created_at: user.created_at,
+          profile_image: user.profile_image || '/placeholder.svg',
+          subscription_id: user.subscription_id
         }));
         
         const formattedBookings = bookingsData.map(booking => ({
           id: booking.id,
-          userId: booking.user_id,
-          classId: booking.class_id,
-          gymId: booking.gym_id,
+          user_id: booking.user_id,
+          class_id: booking.class_id,
+          gym_id: booking.gym_id,
           status: booking.status,
-          dateTime: booking.date_time,
+          date_time: booking.date_time,
+          created_at: booking.created_at,
           userName: booking.users?.name || '',
           className: booking.classes?.title || '',
           gymName: booking.gyms?.name || ''
@@ -113,7 +113,7 @@ const AdminDashboardPage = () => {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-2">Загрузка панели администратора...</p>
+        <p className="mt-2">Загрузка пан��ли администратора...</p>
       </div>
     );
   }
@@ -236,7 +236,7 @@ const AdminDashboardPage = () => {
                       <span className="text-muted-foreground">{booking.gymName}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(booking.dateTime).toLocaleString()}
+                      {new Date(booking.date_time).toLocaleString()}
                     </p>
                   </div>
                 ))}
@@ -311,7 +311,7 @@ const AdminDashboardPage = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-16 h-16 overflow-hidden rounded">
                           <img 
-                            src={gym.mainImage} 
+                            src={gym.main_image} 
                             alt={gym.name} 
                             className="w-full h-full object-cover"
                           />
@@ -375,7 +375,7 @@ const AdminDashboardPage = () => {
                         <span className="text-muted-foreground">Зал: {booking.gymName}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Дата: {new Date(booking.dateTime).toLocaleString()}
+                        Дата: {new Date(booking.date_time).toLocaleString()}
                       </p>
                       <div className="flex justify-end gap-2 mt-2">
                         <Button size="sm" variant="outline">Изменить статус</Button>

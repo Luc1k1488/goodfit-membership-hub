@@ -690,7 +690,7 @@ const PartnerDashboardPage = () => {
                         Зал: {booking.gymName}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Дата: {new Date(booking.dateTime).toLocaleString()}
+                        Дата: {new Date(booking.date_time).toLocaleString()}
                       </p>
                       <div className="flex justify-end gap-2 mt-3">
                         <Button size="sm" variant="outline" className="text-blue-500 border-blue-500">

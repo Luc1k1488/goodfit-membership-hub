@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Gym, FitnessClass, Subscription, User, Booking } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
@@ -404,7 +403,6 @@ export const AppProvider = ({ children }: AppProviderProps) => {
             city: gym.city,
             main_image: gym.main_image,
             images: gym.images,
-            features: gym.features,
             category: gym.category,
             working_hours: gym.working_hours,
             rating: 0,

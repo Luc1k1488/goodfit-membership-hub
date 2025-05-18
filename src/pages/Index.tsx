@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { HeroSection } from "@/components/HeroSection";
@@ -8,6 +7,7 @@ import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/context/AppContext";
 import { Star, Map, Dumbbell, Calendar, ArrowRight } from "lucide-react";
+import { parseISO } from 'date-fns';
 
 const HomePage = () => {
   const { gyms, classes, subscriptions, getGymById } = useApp();
@@ -27,6 +27,18 @@ const HomePage = () => {
     ...cls,
     gym: getGymById(cls.gymId)
   }));
+  
+  // Sort by date
+  const sorted = [...classes].sort((a, b) => 
+    parseISO(a.starttime).getTime() - parseISO(b.starttime).getTime()
+  );
+  
+  // Get top classes
+  const topClasses = sorted.slice(0, 3);
+  
+  // Get top gyms
+  const gymIds = topClasses.map(cls => cls.gymid);
+  const topGymsData = gyms.filter(gym => gymIds.includes(gym.id));
   
   return (
     <div className="flex flex-col min-h-screen">

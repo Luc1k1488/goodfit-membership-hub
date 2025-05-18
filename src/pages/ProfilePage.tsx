@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -58,8 +57,8 @@ const ProfilePage = () => {
   // Get the classes for active bookings
   const activeClasses = activeBookings
     .map(booking => {
-      if (!booking.class && booking.classId) {
-        return getClassById(booking.classId);
+      if (!booking.class && booking.class_id) {
+        return getClassById(booking.class_id);
       }
       return booking.class;
     })
@@ -75,9 +74,9 @@ const ProfilePage = () => {
         <Card>
           <CardHeader className="flex flex-row items-center gap-4 pb-2">
             <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden">
-              {currentUser && currentUser.profileImage ? (
+              {currentUser && currentUser.profile_image ? (
                 <img 
-                  src={currentUser.profileImage} 
+                  src={currentUser.profile_image} 
                   alt={currentUser.name || "Пользователь"} 
                   className="object-cover w-full h-full"
                 />
@@ -127,7 +126,7 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
         
-        {currentUser.subscriptionId ? (
+        {currentUser.subscription_id ? (
           <Card className="mt-4">
             <CardHeader>
               <div className="flex justify-between items-center">
@@ -190,8 +189,8 @@ const ProfilePage = () => {
                         fitnessClass={fitnessClass} 
                         gym={
                           {
-                            id: fitnessClass.gymId,
-                            name: getGymById(fitnessClass.gymId)?.name || ""
+                            id: fitnessClass.gymid,
+                            name: getGymById(fitnessClass.gymid)?.name || ""
                           }
                         }
                         showBookButton={false}
@@ -223,7 +222,7 @@ const ProfilePage = () => {
                           <h3 className="font-medium">{booking.className || "Занятие"}</h3>
                           <p className="text-sm text-muted-foreground">{booking.gymName || "Фитнес-центр"}</p>
                           <p className="text-sm text-muted-foreground">
-                            {booking.dateTime ? format(new Date(booking.dateTime), "d MMMM, HH:mm", { locale: ru }) : ""}
+                            {booking.date_time ? format(new Date(booking.date_time), "d MMMM, HH:mm", { locale: ru }) : ""}
                           </p>
                         </div>
                         <Button variant="outline" size="sm" className="text-blue-500 border-blue-500">

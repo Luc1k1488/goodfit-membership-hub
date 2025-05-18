@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ClassCard } from "@/components/ClassCard";
 import { Input } from "@/components/ui/input";
@@ -43,14 +42,14 @@ const ClassesPage = () => {
     const timer = setTimeout(() => {
       try {
         const filtered = classes.filter((cls) => {
-          const classDate = parseISO(cls.startTime);
+          const classDate = parseISO(cls.starttime);
           const matchesDate = isSameDay(classDate, selectedDate);
           
           if (!matchesDate) return false;
           
           if (!searchTerm) return true;
           
-          const gym = getGymById(cls.gymId);
+          const gym = getGymById(cls.gymid);
           const searchLower = searchTerm.toLowerCase();
           
           return (
@@ -63,7 +62,7 @@ const ClassesPage = () => {
         
         // Sort by start time
         const sortedClasses = [...filtered].sort((a, b) => 
-          parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime()
+          parseISO(a.starttime).getTime() - parseISO(b.starttime).getTime()
         );
         
         setFilteredClasses(sortedClasses);
@@ -89,6 +88,7 @@ const ClassesPage = () => {
     return format(date, "EEE", { locale: ru });
   };
   
+  // Исправление в handleClassSelect - line 202
   const handleClassSelect = (classId: string, gymId: string) => {
     navigate(`/booking/${gymId}/${classId}`);
   };
@@ -199,9 +199,9 @@ const ClassesPage = () => {
         ) : filteredClasses.length > 0 ? (
           <div className="grid gap-4">
             {filteredClasses.map((cls) => {
-              const gym = getGymById(cls.gymId);
+              const gym = getGymById(cls.gymid);
               return (
-                <div key={cls.id} onClick={() => handleClassSelect(cls.id, cls.gymId)}>
+                <div key={cls.id} onClick={() => handleClassSelect(cls.id, cls.gymid)}>
                   <ClassCard
                     fitnessClass={cls}
                     gym={gym ? { id: gym.id, name: gym.name } : undefined}

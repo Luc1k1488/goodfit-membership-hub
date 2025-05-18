@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabaseClient";
 import { User } from "@/types";
 import { isEmail, formatPhoneNumber } from "./formatUtils";
@@ -296,12 +295,12 @@ export const getCurrentUserSession = async (): Promise<{
       const user: User = {
         id: userData.id,
         name: userData.name || '',
-        email: userData.email || '',
-        phone: userData.phone || '',
-        role: (userData.role || 'USER') as "USER" | "PARTNER" | "ADMIN",
-        createdAt: userData.created_at,
-        profileImage: userData.profile_image || '/placeholder.svg',
-        subscriptionId: userData.subscription_id || null
+        email: userData.email || null,
+        phone: userData.phone || null,
+        role: userData.role as UserRole,
+        created_at: userData.created_at,
+        profile_image: userData.profile_image || null,
+        subscription_id: userData.subscription_id
       };
 
       console.log("User data retrieved:", user);
