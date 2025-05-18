@@ -103,4 +103,5 @@ export interface GymFilters {
   city?: string;
   category?: string[];
   rating?: number;
+  search?: string; // Added search property to GymFilters
 }

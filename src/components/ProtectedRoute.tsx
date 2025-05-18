@@ -61,7 +61,8 @@ export const ProtectedRoute = ({
   // If user not authenticated, redirect to login
   if (!currentUser) {
     console.log("No current user, redirecting to login");
-    return <Navigate to="/login" replace />;
+    // Pass the current location to the login page so we can redirect back after login
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   // Check if user has required role

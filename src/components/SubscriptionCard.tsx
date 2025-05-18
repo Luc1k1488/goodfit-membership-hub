@@ -13,12 +13,12 @@ interface SubscriptionCardProps {
 }
 
 export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
-  const { user } = useApp();
-  const { currentUser } = useAuth();
+  const { currentUser } = useApp();
+  const { currentUser: authUser } = useAuth();
   const navigate = useNavigate();
   
   const handleSubscribe = () => {
-    if (!currentUser && !user) {
+    if (!authUser && !currentUser) {
       navigate("/login");
       return;
     }

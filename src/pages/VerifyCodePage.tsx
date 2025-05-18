@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -24,7 +23,15 @@ const VerifyCodePage = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyOTP, login, register, isLoading } = useAuth();
+  const { verifyOTP, login, register, isLoading, currentUser } = useAuth();
+
+  // If user is already logged in, redirect to profile
+  useEffect(() => {
+    if (currentUser) {
+      console.log("User is already logged in, redirecting to profile");
+      navigate("/profile", { replace: true });
+    }
+  }, [currentUser, navigate]);
 
   useEffect(() => {
     // Clear any previous errors
@@ -300,7 +307,7 @@ const VerifyCodePage = () => {
                 onClick={() => navigate(isRegistration ? "/register" : "/login", { replace: true })}
                 className="text-blue-500 p-0"
               >
-                {isRegistration ? "Изменить данные" : "Изменить контактные данные"}
+                {isRegistration ? "Изменит�� данные" : "Изменить контактные данные"}
               </Button>
             </div>
 
