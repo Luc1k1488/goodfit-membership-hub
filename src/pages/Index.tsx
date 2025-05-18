@@ -22,12 +22,12 @@ const HomePage = () => {
   
   // Get top-rated gyms
   const topGyms = [...gyms]
-    .filter((gym) => gym.gymid === gym.id) // Ensure we get the correct gym matching
+    .filter((gym) => gym.id) // Changed from gym.gymid === gym.id to just check if gym.id exists
     .slice(0, 3);
   
   return (
     <div className="pb-16">
-      <Header home />
+      <Header />
       <HeroSection />
       
       {/* Upcoming Classes Section */}

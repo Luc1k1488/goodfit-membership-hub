@@ -7,9 +7,10 @@ import { useTheme } from "@/context/ThemeContext";
 
 type HeaderProps = {
   children?: React.ReactNode;
+  home?: boolean; // Added home prop
 };
 
-export function Header({ children }: HeaderProps) {
+export function Header({ children, home }: HeaderProps) {
   const { currentUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
