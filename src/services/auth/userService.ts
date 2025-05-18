@@ -1,3 +1,7 @@
+import { supabase } from "@/lib/supabaseClient";
+import { User } from "@/types";
+import { isEmail, formatPhoneNumber } from "./formatUtils";
+
 export const getUserOrCreate = async (
   userId: string,
   userData: {
