@@ -67,7 +67,7 @@ const GymsPage = () => {
       
       // If user role is PARTNER, only show their gyms
       if (userRole === 'PARTNER' && currentUser) {
-        query = query.eq('ownerId', currentUser.id);
+        query = query.eq('ownerid', currentUser.id);
       }
       
       const { data, error } = await query;
@@ -109,7 +109,7 @@ const GymsPage = () => {
         location: { lat: 0, lng: 0 }, // Default location
         mainImage: "https://via.placeholder.com/300x200?text=GoodFit",
         images: ["https://via.placeholder.com/300x200?text=GoodFit"],
-        ownerId: currentUser?.id,
+        ownerid: currentUser?.id,
         rating: 0,
         reviewCount: 0,
         features: [],
@@ -286,7 +286,7 @@ const GymsPage = () => {
                     <TableCell className="font-medium">{gym.name}</TableCell>
                     <TableCell>{gym.city}</TableCell>
                     <TableCell>{gym.address}</TableCell>
-                    {userRole === "ADMIN" && <TableCell>{gym.ownerId}</TableCell>}
+                    {userRole === "ADMIN" && <TableCell>{gym.ownerid}</TableCell>}
                     <TableCell>
                       {gym.rating > 0 ? `${gym.rating} (${gym.reviewCount} отзывов)` : "Нет отзывов"}
                     </TableCell>

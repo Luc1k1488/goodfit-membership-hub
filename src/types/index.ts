@@ -41,7 +41,7 @@ export interface Gym {
   };
   mainImage: string;
   images: string[];
-  ownerId: string;
+  ownerid: string; // Changed from ownerId to ownerid to match DB
   rating: number;
   reviewCount: number;
   features: string[];
@@ -54,11 +54,11 @@ export interface Gym {
 // Class and schedule types
 export interface FitnessClass {
   id: string;
-  gymId: string;
+  gymId: string; // Internal representation, might need mapping to/from gymid
   title: string;
   description: string;
   instructor: string;
-  startTime: string;
+  startTime: string; // Internal representation, might need mapping to/from starttime
   endTime: string;
   capacity: number;
   bookedCount: number;
@@ -68,11 +68,11 @@ export interface FitnessClass {
 // Booking types
 export interface Booking {
   id: string;
-  userId: string;
-  classId: string;
+  userId: string; // Changed from userId to user_id to match DB when accessing directly
+  classId: string; // Changed from classId to class_id to match DB when accessing directly
   gymId: string;
   status: 'BOOKED' | 'COMPLETED' | 'CANCELLED';
-  dateTime: string;
+  dateTime: string; // Changed from dateTime to date_time to match DB when accessing directly
   createdAt?: string;
   className?: string;
   gymName?: string;

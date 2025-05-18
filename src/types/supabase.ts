@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -32,7 +33,53 @@ export interface Database {
         }
         Update: Partial<Database["public"]["Tables"]["users"]["Insert"]>
       }
-      // другие таблицы можно подключить при необходимости
+      classes: {
+        Row: {
+          id: string
+          gymid: string
+          name: string
+          starttime: string
+        }
+        Insert: {
+          id?: string
+          gymid: string
+          name: string
+          starttime: string
+        }
+        Update: Partial<Database["public"]["Tables"]["classes"]["Insert"]>
+      }
+      bookings: {
+        Row: {
+          id: string
+          user_id: string
+          class_id: string
+          status: string
+          date_time: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          class_id: string
+          status: string
+          date_time: string
+        }
+        Update: Partial<Database["public"]["Tables"]["bookings"]["Insert"]>
+      }
+      gyms: {
+        Row: {
+          id: string
+          name: string
+          location: Json
+          ownerid: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          location: Json
+          ownerid: string
+        }
+        Update: Partial<Database["public"]["Tables"]["gyms"]["Insert"]>
+      }
     }
   }
 }
