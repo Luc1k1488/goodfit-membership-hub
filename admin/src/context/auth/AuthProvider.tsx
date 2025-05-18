@@ -214,7 +214,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       authInitialized,
       userExists: !!currentUser,
       role: userRole,
-      userId: currentUser?.id
+      user_id: currentUser?.id
     });
   }, [isLoading, authInitialized, currentUser, userRole]);
 

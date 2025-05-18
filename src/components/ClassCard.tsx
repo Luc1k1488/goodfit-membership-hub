@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,11 +17,11 @@ interface ClassCardProps {
 export function ClassCard({ fitnessClass, gym, showBookButton = true }: ClassCardProps) {
   const { bookClass, user } = useApp();
   
-  const startTime = parseISO(fitnessClass.starttime);
-  const endTime = parseISO(fitnessClass.end_time);
+  const start_time = parseISO(fitnessClass.starttime);
+  const end_time = parseISO(fitnessClass.end_time);
   
-  const formattedDate = format(startTime, "EEEE, d MMMM", { locale: ru });
-  const formattedTime = `${format(startTime, "HH:mm")} - ${format(endTime, "HH:mm")}`;
+  const formatted_date = format(start_time, "EEEE, d MMMM", { locale: ru });
+  const formatted_time = `${format(start_time, "HH:mm")} - ${format(end_time, "HH:mm")}`;
   
   const isFullyBooked = fitnessClass.booked_count >= fitnessClass.capacity;
   const spacesLeft = fitnessClass.capacity - fitnessClass.booked_count;
@@ -48,7 +49,7 @@ export function ClassCard({ fitnessClass, gym, showBookButton = true }: ClassCar
         <div className="w-3/4">
           <div className="flex flex-col space-y-1">
             <h3 className="font-bold text-lg">{fitnessClass.title}</h3>
-            <p className="text-sm text-blue-500">{formattedTime}</p>
+            <p className="text-sm text-blue-500">{formatted_time}</p>
             
             {gym && (
               <p className="text-sm text-muted-foreground flex items-center">

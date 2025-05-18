@@ -1,251 +1,273 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ClassCard } from "@/components/ClassCard";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Loader2, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Booking } from "@/types";
 import { useApp } from "@/context/AppContext";
-import { useAuth } from "@/context/auth";
-import { User, Calendar, CreditCard, Settings, Loader2 } from "lucide-react";
-import { FitnessClass } from "@/types";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Header } from "@/components/Header";
-import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const ProfilePage = () => {
-  const { bookings, getClassById, getGymById } = useApp();
-  const { currentUser, isLoading, authInitialized, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>("bookings");
+  const { currentUser, logout } = useAuth();
+  const { bookings, getUserBookings, cancelBooking } = useApp();
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("active");
+  const navigate = useNavigate();
   
-  // Simplified loading logic - ProtectedRoute handles most auth checks
-  if (isLoading || !authInitialized) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Загрузка профиля...</p>
-      </div>
-    );
-  }
+  const user_id = currentUser?.id;
+  const name = currentUser?.name || "Пользователь";
+  const phone = currentUser?.phone || "";
+  const email = currentUser?.email || "";
+  const profile_image = currentUser?.profile_image;
+  const role = currentUser?.role;
+  const subscription_id = currentUser?.subscription_id;
   
-  // This should not happen due to ProtectedRoute, but kept as safety
-  if (!currentUser) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-lg mb-4">Ошибка загрузки профиля</p>
-        <Button asChild>
-          <Link to="/login">Войти</Link>
-        </Button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const fetchBookings = async () => {
+      setIsLoading(true);
+      await getUserBookings();
+      setIsLoading(false);
+    };
+
+    fetchBookings();
+  }, [getUserBookings]);
   
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast.error("Ошибка при выходе из системы");
-    }
+  const activeBookings = bookings.filter(
+    (booking) => booking.status === "BOOKED"
+  );
+  
+  const completedBookings = bookings.filter(
+    (booking) => booking.status === "COMPLETED" || booking.status === "CANCELLED"
+  );
+  
+  const handleCancelBooking = async (bookingId: string) => {
+    setIsLoading(true);
+    await cancelBooking(bookingId);
+    setIsLoading(false);
   };
   
-  // Filter bookings by status
-  const activeBookings = bookings.filter(booking => booking.status === 'BOOKED');
-  const completedBookings = bookings.filter(booking => booking.status === 'COMPLETED');
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
   
-  // Get the classes for active bookings
-  const activeClasses = activeBookings
-    .map(booking => {
-      if (!booking.class && booking.class_id) {
-        return getClassById(booking.class_id);
-      }
-      return booking.class;
-    })
-    .filter(Boolean) as FitnessClass[];
+  const navigateToSubscriptions = () => {
+    navigate("/subscriptions");
+  };
   
   return (
-    <>
-      <Header>
-        <h1 className="text-xl font-bold">Профиль</h1>
-      </Header>
-      
-      <div className="container px-4 py-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-4 pb-2">
-            <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden">
-              {currentUser && currentUser.profile_image ? (
-                <img 
-                  src={currentUser.profile_image} 
-                  alt={currentUser.name || "Пользователь"} 
-                  className="object-cover w-full h-full"
-                />
-              ) : (
-                <User className="w-8 h-8 text-blue-500" />
-              )}
+    <div className="container mx-auto px-4 py-6 pb-20">
+      {/* Profile Header */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-8">
+        <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+          {profile_image ? (
+            <img 
+              src={profile_image} 
+              alt={name}
+              className="w-full h-full object-cover" 
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-4xl text-gray-400">
+              {name.charAt(0)}
             </div>
-            <div>
-              <CardTitle>{currentUser.name || 'Пользователь'}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {currentUser.phone || currentUser.email || ''}
-              </p>
-              {currentUser.role !== 'USER' && (
-                <Badge className="mt-1 bg-blue-500">
-                  {currentUser.role === 'ADMIN' ? 'Администратор' : 'Партнёр'}
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="pt-2 pb-4">
-            <div className="flex gap-4 mt-2">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                asChild
-              >
-                <Link to={currentUser.role === 'ADMIN' 
-                  ? '/admin-dashboard' 
-                  : currentUser.role === 'PARTNER' 
-                    ? '/partner-dashboard'
-                    : '/profile'}>
-                  {currentUser.role === 'ADMIN' 
-                    ? 'Админ панель' 
-                    : currentUser.role === 'PARTNER' 
-                      ? 'Панель партнёра'
-                      : 'Настройки'}
-                </Link>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={handleLogout}
-              >
-                Выйти
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
         
-        {currentUser.subscription_id ? (
-          <Card className="mt-4">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg">Абонемент</CardTitle>
-                <Badge className="bg-blue-500">Активен</Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Тип абонемента</p>
-                  <p className="font-medium">Безлимитный 90 дней</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Действителен до</p>
-                  <p className="font-medium">15.09.2025</p>
-                </div>
-                <Button className="w-full bg-blue-500 text-white" asChild>
-                  <Link to="/subscriptions">
-                    Управление абонементом
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="mt-4 bg-blue-50 dark:bg-blue-900/20">
-            <CardContent className="pt-6 pb-6">
-              <h3 className="font-medium mb-1">Нет активного абонемента</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Приобретите абонемент, чтобы получить доступ ко всем залам и занятиям.
-              </p>
-              <Button className="w-full bg-blue-500 text-white" asChild>
-                <Link to="/subscriptions">
-                  Выбрать абонемент
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-        
-        <div className="mt-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full grid grid-cols-2">
-              <TabsTrigger value="bookings">
-                Мои записи
-              </TabsTrigger>
-              <TabsTrigger value="history">
-                История
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="bookings" className="pt-4">
-              {activeBookings.length > 0 ? (
-                <div className="space-y-4">
-                  {activeClasses.map((fitnessClass) => 
-                    fitnessClass && (
-                      <ClassCard 
-                        key={fitnessClass.id} 
-                        fitnessClass={fitnessClass} 
-                        gym={
-                          {
-                            id: fitnessClass.gymid,
-                            name: getGymById(fitnessClass.gymid)?.name || ""
-                          }
-                        }
-                        showBookButton={false}
-                      />
-                    )
-                  )}
-                </div>
-              ) : (
-                <div className="p-8 text-center bg-gray-50 dark:bg-gray-800 rounded-xl">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 text-blue-500" />
-                  <h3 className="mb-2 text-lg font-medium">Нет предстоящих записей</h3>
-                  <p className="mb-4 text-muted-foreground">
-                    У вас пока нет записей на занятия
-                  </p>
-                  <Button className="w-full md:w-auto bg-blue-500 text-white" asChild>
-                    <Link to="/classes">Найти занятия</Link>
-                  </Button>
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="history" className="pt-4">
-              {completedBookings.length > 0 ? (
-                <div className="space-y-4">
-                  {completedBookings.map(booking => (
-                    <Card key={booking.id}>
-                      <CardContent className="flex items-center justify-between p-4">
-                        <div>
-                          <h3 className="font-medium">{booking.className || "Занятие"}</h3>
-                          <p className="text-sm text-muted-foreground">{booking.gymName || "Фитнес-центр"}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {booking.date_time ? format(new Date(booking.date_time), "d MMMM, HH:mm", { locale: ru }) : ""}
-                          </p>
-                        </div>
-                        <Button variant="outline" size="sm" className="text-blue-500 border-blue-500">
-                          Отзыв
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center bg-gray-50 dark:bg-gray-800 rounded-xl">
-                  <h3 className="mb-2 text-lg font-medium">Нет посещённых занятий</h3>
-                  <p className="text-muted-foreground">
-                    История ваших посещений будет отображаться здесь
-                  </p>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+        <div className="flex-grow text-center sm:text-left">
+          <h1 className="text-2xl font-bold">{name}</h1>
+          
+          <div className="mt-2 text-muted-foreground">
+            {phone && <p>{phone}</p>}
+            {email && <p>{email}</p>}
+          </div>
+          
+          {role === "PARTNER" && (
+            <Button 
+              variant="outline" 
+              className="mt-3 mr-2"
+              onClick={() => navigate("/admin")}
+            >
+              Панель партнера
+            </Button>
+          )}
+          
+          {role === "ADMIN" && (
+            <Button 
+              variant="outline" 
+              className="mt-3 mr-2"
+              onClick={() => navigate("/admin")}
+            >
+              Панель админа
+            </Button>
+          )}
+          
+          <Button 
+            variant="ghost" 
+            className="mt-3"
+            onClick={handleLogout}
+          >
+            Выйти
+          </Button>
         </div>
       </div>
-    </>
+      
+      {/* Subscription Card */}
+      <Card className="mb-8">
+        <CardContent className="p-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-medium">Абонемент</h2>
+              <p className="text-muted-foreground">
+                {subscription_id ? "Premium" : "Нет активного абонемента"}
+              </p>
+            </div>
+            
+            <Button
+              onClick={navigateToSubscriptions}
+              variant={subscription_id ? "outline" : "default"}
+            >
+              {subscription_id ? "Сменить тариф" : "Выбрать тариф"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Bookings */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Мои записи</h2>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4 w-full justify-start">
+            <TabsTrigger value="active">
+              Активные ({activeBookings.length})
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              История ({completedBookings.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="active">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : activeBookings.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">У вас нет активных записей</p>
+                <Button 
+                  className="mt-4"
+                  onClick={() => navigate("/gyms")}
+                >
+                  Записаться на занятие
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {activeBookings.map((booking) => (
+                  <BookingCard 
+                    key={booking.id} 
+                    booking={booking} 
+                    onCancel={handleCancelBooking}
+                    isHistory={false}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="history">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : completedBookings.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">История посещений пуста</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {completedBookings.map((booking) => (
+                  <BookingCard 
+                    key={booking.id} 
+                    booking={booking}
+                    onCancel={() => {}} 
+                    isHistory={true}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+
+interface BookingCardProps {
+  booking: Booking;
+  onCancel: (id: string) => void;
+  isHistory: boolean;
+}
+
+const BookingCard = ({ booking, onCancel, isHistory }: BookingCardProps) => {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  
+  if (!booking.class) {
+    return null;
+  }
+  
+  const start_time = parseISO(booking.class.starttime);
+  const formatted_date = format(start_time, "d MMMM", { locale: ru });
+  const formatted_time = format(start_time, "HH:mm", { locale: ru });
+  
+  const handleCancel = async () => {
+    setIsLoading(true);
+    await onCancel(booking.id);
+    setIsLoading(false);
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex justify-between">
+          <div className="flex-grow">
+            <h3 className="font-medium">{booking.class.title}</h3>
+            <p className="text-sm text-muted-foreground">
+              {formatted_date} в {formatted_time}
+            </p>
+            {booking.gym && (
+              <p className="text-sm mt-1">{booking.gym.name}</p>
+            )}
+            {booking.status === "CANCELLED" && (
+              <span className="inline-flex items-center mt-2 px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-800">
+                Отменено
+              </span>
+            )}
+            {booking.status === "COMPLETED" && (
+              <span className="inline-flex items-center mt-2 px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                Завершено
+              </span>
+            )}
+          </div>
+          
+          {!isHistory && booking.status === "BOOKED" && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={handleCancel}
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

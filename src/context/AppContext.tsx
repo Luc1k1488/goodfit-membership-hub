@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Gym, FitnessClass, Subscription, User, Booking } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
