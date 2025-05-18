@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,9 +60,9 @@ const PartnerDashboardPage = () => {
     city: "",
     category: ["Фитнес"],
     features: ["Wi-Fi", "Душевые"],
-    mainImage: "/lovable-uploads/gym.jpg",
+    main_image: "/lovable-uploads/gym.jpg", // Changed from mainImage
     images: ["/lovable-uploads/gym.jpg"],
-    workingHours: {
+    working_hours: { // Changed from workingHours
       open: "08:00",
       close: "22:00"
     }
@@ -71,12 +70,12 @@ const PartnerDashboardPage = () => {
 
   // New class form state
   const [newClass, setNewClass] = useState({
-    gymId: "",
+    gymid: "", // Changed from gymId
     title: "",
     description: "",
     instructor: "",
-    startTime: "",
-    endTime: "",
+    starttime: "", // Changed from startTime
+    end_time: "", // Changed from endTime
     category: "Фитнес",
     capacity: 20
   });
@@ -111,7 +110,7 @@ const PartnerDashboardPage = () => {
         const { data: gymsData, error: gymsError } = await supabase
           .from('gyms')
           .select('*')
-          .eq('owner_id', currentUser.id);
+          .eq('ownerid', currentUser.id);
           
         if (gymsError) throw gymsError;
         
@@ -121,15 +120,15 @@ const PartnerDashboardPage = () => {
           description: gym.description,
           address: gym.address,
           city: gym.city,
-          mainImage: gym.main_image,
+          main_image: gym.main_image, // Changed from mainImage
           images: gym.images,
           features: gym.features,
           category: gym.category,
           location: { lat: gym.location?.lat || 0, lng: gym.location?.lng || 0 },
-          workingHours: gym.working_hours,
+          working_hours: gym.working_hours, // Changed from workingHours
           rating: gym.rating,
-          reviewCount: gym.review_count,
-          ownerId: gym.owner_id
+          review_count: gym.review_count, // Changed from reviewCount
+          ownerid: gym.ownerid // Changed from ownerId
         }));
         
         setPartnerGyms(formattedGyms);
@@ -141,21 +140,21 @@ const PartnerDashboardPage = () => {
           const { data: classesData, error: classesError } = await supabase
             .from('classes')
             .select('*')
-            .in('gym_id', gymIds);
+            .in('gymid', gymIds);
             
           if (classesError) throw classesError;
           
           const formattedClasses = classesData.map(cls => ({
             id: cls.id,
-            gymId: cls.gym_id,
+            gymid: cls.gymid, // Changed from gymId
             title: cls.title,
             description: cls.description,
             instructor: cls.instructor,
-            startTime: cls.start_time,
-            endTime: cls.end_time,
+            starttime: cls.starttime, // Changed from startTime
+            end_time: cls.end_time, // Changed from endTime
             category: cls.category,
             capacity: cls.capacity,
-            bookedCount: cls.booked_count
+            booked_count: cls.booked_count // Changed from bookedCount
           }));
           
           setPartnerClasses(formattedClasses);
@@ -173,11 +172,11 @@ const PartnerDashboardPage = () => {
             
             const formattedBookings = bookingsData.map(booking => ({
               id: booking.id,
-              userId: booking.user_id,
-              classId: booking.class_id,
-              gymId: booking.gym_id,
+              user_id: booking.user_id,
+              class_id: booking.class_id,
+              gym_id: booking.gym_id,
               status: booking.status,
-              dateTime: booking.date_time,
+              date_time: booking.date_time,
               userName: booking.users?.name || '',
               className: booking.classes?.title || '',
               gymName: formattedGyms.find(gym => gym.id === booking.gym_id)?.name || ''
@@ -206,7 +205,7 @@ const PartnerDashboardPage = () => {
       const gymToAdd = {
         ...newGym,
         location: { lat: 0, lng: 0 },
-        ownerId: currentUser.id
+        ownerid: currentUser.id // Changed from ownerId
       };
       
       await addGym(gymToAdd);
@@ -222,13 +221,13 @@ const PartnerDashboardPage = () => {
   // Handle adding a new class
   const handleAddClass = async () => {
     try {
-      const startDateTime = new Date(newClass.startTime);
-      const endDateTime = new Date(newClass.endTime);
+      const startDateTime = new Date(newClass.starttime);
+      const endDateTime = new Date(newClass.end_time);
       
       const classToAdd = {
         ...newClass,
-        startTime: startDateTime.toISOString(),
-        endTime: endDateTime.toISOString()
+        starttime: startDateTime.toISOString(), // Changed from startTime
+        end_time: endDateTime.toISOString() // Changed from endTime
       };
       
       await addClass(classToAdd);
@@ -342,10 +341,10 @@ const PartnerDashboardPage = () => {
                       <label className="text-sm font-medium">Время открытия</label>
                       <Input 
                         type="time" 
-                        value={newGym.workingHours.open} 
+                        value={newGym.working_hours.open} 
                         onChange={e => setNewGym({
                           ...newGym, 
-                          workingHours: {...newGym.workingHours, open: e.target.value}
+                          working_hours: {...newGym.working_hours, open: e.target.value}
                         })}
                       />
                     </div>
@@ -353,10 +352,10 @@ const PartnerDashboardPage = () => {
                       <label className="text-sm font-medium">Время закрытия</label>
                       <Input 
                         type="time" 
-                        value={newGym.workingHours.close} 
+                        value={newGym.working_hours.close} 
                         onChange={e => setNewGym({
                           ...newGym, 
-                          workingHours: {...newGym.workingHours, close: e.target.value}
+                          working_hours: {...newGym.working_hours, close: e.target.value}
                         })}
                       />
                     </div>
@@ -389,8 +388,8 @@ const PartnerDashboardPage = () => {
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Зал</label>
                     <Select 
-                      value={newClass.gymId} 
-                      onValueChange={value => setNewClass({...newClass, gymId: value})}
+                      value={newClass.gymid} 
+                      onValueChange={value => setNewClass({...newClass, gymid: value})}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Выберите зал" />
@@ -437,16 +436,16 @@ const PartnerDashboardPage = () => {
                       <label className="text-sm font-medium">Дата и время начала</label>
                       <Input 
                         type="datetime-local" 
-                        value={newClass.startTime} 
-                        onChange={e => setNewClass({...newClass, startTime: e.target.value})}
+                        value={newClass.starttime} 
+                        onChange={e => setNewClass({...newClass, starttime: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Дата и время окончания</label>
                       <Input 
                         type="datetime-local" 
-                        value={newClass.endTime} 
-                        onChange={e => setNewClass({...newClass, endTime: e.target.value})}
+                        value={newClass.end_time} 
+                        onChange={e => setNewClass({...newClass, end_time: e.target.value})}
                       />
                     </div>
                   </div>
@@ -484,7 +483,7 @@ const PartnerDashboardPage = () => {
                   <Button 
                     onClick={handleAddClass} 
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-                    disabled={!newClass.title || !newClass.gymId || !newClass.startTime || !newClass.endTime}
+                    disabled={!newClass.title || !newClass.gymid || !newClass.starttime || !newClass.end_time}
                   >
                     Добавить занятие
                   </Button>
@@ -521,7 +520,7 @@ const PartnerDashboardPage = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-16 h-16 overflow-hidden rounded">
                           <img 
-                            src={gym.mainImage} 
+                            src={gym.main_image} 
                             alt={gym.name} 
                             className="w-full h-full object-cover"
                           />
@@ -604,17 +603,17 @@ const PartnerDashboardPage = () => {
                   cls.category.toLowerCase().includes(searchTerm.toLowerCase())
                 )
                 .map(cls => {
-                  const gymName = partnerGyms.find(gym => gym.id === cls.gymId)?.name || "";
-                  const startTime = parseISO(cls.startTime);
-                  const endTime = parseISO(cls.endTime);
+                  const gymName = partnerGyms.find(gym => gym.id === cls.gymid)?.name || "";
+                  const startTime = parseISO(cls.starttime);
+                  const endTime = parseISO(cls.end_time);
                   
                   return (
                     <Card key={cls.id} className="mb-4">
                       <CardContent className="p-4">
                         <div className="flex justify-between">
                           <h3 className="font-medium">{cls.title}</h3>
-                          <Badge className={cls.bookedCount >= cls.capacity ? "bg-red-500" : "bg-green-500"}>
-                            {cls.bookedCount} / {cls.capacity}
+                          <Badge className={cls.booked_count >= cls.capacity ? "bg-red-500" : "bg-green-500"}>
+                            {cls.booked_count} / {cls.capacity}
                           </Badge>
                         </div>
                         <p className="text-sm text-blue-500">

@@ -39,12 +39,24 @@ export interface Database {
           gymid: string
           name: string
           starttime: string
+          description?: string
+          instructor?: string
+          end_time?: string
+          category?: string
+          capacity?: number
+          booked_count?: number
         }
         Insert: {
           id?: string
           gymid: string
           name: string
           starttime: string
+          description?: string
+          instructor?: string
+          end_time?: string
+          category?: string
+          capacity?: number
+          booked_count?: number
         }
         Update: Partial<Database["public"]["Tables"]["classes"]["Insert"]>
       }
@@ -55,6 +67,8 @@ export interface Database {
           class_id: string
           status: string
           date_time: string
+          gym_id?: string
+          created_at?: string
         }
         Insert: {
           id?: string
@@ -62,6 +76,8 @@ export interface Database {
           class_id: string
           status: string
           date_time: string
+          gym_id?: string
+          created_at?: string
         }
         Update: Partial<Database["public"]["Tables"]["bookings"]["Insert"]>
       }
@@ -71,18 +87,35 @@ export interface Database {
           name: string
           location: Json
           ownerid: string
+          description?: string
+          city?: string
+          address?: string
+          category?: string[]
+          main_image?: string
+          images?: string[]
+          features?: string[]
+          rating?: number
+          review_count?: number
+          working_hours?: Json
         }
         Insert: {
           id?: string
           name: string
           location: Json
           ownerid: string
+          description?: string
+          city?: string
+          address?: string
+          category?: string[]
+          main_image?: string
+          images?: string[]
+          features?: string[]
+          rating?: number
+          review_count?: number
+          working_hours?: Json
         }
         Update: Partial<Database["public"]["Tables"]["gyms"]["Insert"]>
       }
     }
   }
 }
-
-// Note: Supabase client initialization moved to src/lib/supabaseClient.ts
-// Import it from there instead of creating multiple instances

@@ -22,13 +22,15 @@ if (typeof window !== 'undefined') {
 }
 
 // Utility functions
-export const incrementBookedCount = async (classId: string) => {
-  const { error } = await supabase.rpc('increment_booked_count', { class_id: classId })
+export const incrementBookedCount = async (class_id: string) => {
+  // Changed from classId to class_id
+  const { error } = await supabase.rpc('increment_booked_count', { class_id: class_id })
   if (error) console.error('Error incrementing booked count:', error)
 }
 
-export const decrementBookedCount = async (classId: string) => {
-  const { error } = await supabase.rpc('decrement_booked_count', { class_id: classId })
+export const decrementBookedCount = async (class_id: string) => {
+  // Changed from classId to class_id
+  const { error } = await supabase.rpc('decrement_booked_count', { class_id: class_id })
   if (error) console.error('Error decrementing booked count:', error)
 }
 
@@ -39,9 +41,9 @@ export interface SupabaseUser {
   email: string
   phone: string
   role: string
-  createdAt: string
-  profileImage: string
-  subscriptionId: string | null
+  created_at: string // Changed from createdAt
+  profile_image: string // Changed from profileImage
+  subscription_id: string | null // Changed from subscriptionId
 }
 
 // Authentication utility functions
@@ -76,9 +78,9 @@ export const getCurrentUser = async (): Promise<SupabaseUser | null> => {
       email: data.email || '',
       phone: data.phone || '',
       role: data.role,
-      createdAt: data.created_at,
-      profileImage: data.profile_image || '/placeholder.svg',
-      subscriptionId: data.subscription_id
+      created_at: data.created_at,
+      profile_image: data.profile_image || '/placeholder.svg',
+      subscription_id: data.subscription_id
     }
   } catch (error) {
     console.error("Error fetching user data:", error)

@@ -8,9 +8,9 @@ export interface User {
   phone: string;
   email?: string;
   role: UserRole;
-  subscriptionId?: string;
-  createdAt: string;
-  profileImage?: string;
+  subscription_id?: string; // Changed from subscriptionId
+  created_at: string; // Changed from createdAt
+  profile_image?: string; // Changed from profileImage
 }
 
 // Gym and fitness center types
@@ -25,13 +25,13 @@ export interface Gym {
     lat: number;
     lng: number;
   };
-  mainImage: string;
+  main_image: string; // Changed from mainImage
   images: string[];
-  ownerid: string;
+  ownerid: string; // Confirmed as ownerid
   rating: number;
-  reviewCount: number;
+  review_count: number; // Changed from reviewCount
   features: string[];
-  workingHours: {
+  working_hours: { // Changed from workingHours
     open: string;
     close: string;
   };
@@ -40,26 +40,26 @@ export interface Gym {
 // Class and schedule types
 export interface FitnessClass {
   id: string;
-  gymId: string;
+  gymid: string; // Changed from gymId
   title: string;
   description: string;
   instructor: string;
-  startTime: string;
-  endTime: string;
+  starttime: string; // Changed from startTime
+  end_time: string; // Changed from endTime
   capacity: number;
-  bookedCount: number;
+  booked_count: number; // Changed from bookedCount
   category: string;
 }
 
 // Booking types
 export interface Booking {
   id: string;
-  userId: string;
-  classId: string;
-  gymId: string;
+  user_id: string; // Confirmed as user_id
+  class_id: string; // Confirmed as class_id
+  gym_id: string; // Changed from gymId
   status: 'BOOKED' | 'COMPLETED' | 'CANCELLED';
-  dateTime: string;
-  createdAt?: string;
+  date_time: string; // Confirmed as date_time
+  created_at?: string; // Changed from createdAt
   className?: string;
   gymName?: string;
   userName?: string;
@@ -68,7 +68,7 @@ export interface Booking {
     id: string;
     name: string;
     city: string;
-    mainImage: string;
+    main_image: string; // Changed from mainImage
   };
 }
 

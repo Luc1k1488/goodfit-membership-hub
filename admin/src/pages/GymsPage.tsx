@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -107,13 +106,13 @@ const GymsPage = () => {
         address: gymAddress,
         category: ["Тренажерный зал"],
         location: { lat: 0, lng: 0 }, // Default location
-        mainImage: "https://via.placeholder.com/300x200?text=GoodFit",
+        main_image: "https://via.placeholder.com/300x200?text=GoodFit", // Changed from mainImage
         images: ["https://via.placeholder.com/300x200?text=GoodFit"],
-        ownerid: currentUser?.id,
+        ownerid: currentUser?.id, // Changed from ownerId
         rating: 0,
-        reviewCount: 0,
+        review_count: 0, // Changed from reviewCount
         features: [],
-        workingHours: { open: "09:00", close: "21:00" }
+        working_hours: { open: "09:00", close: "21:00" } // Changed from workingHours
       };
       
       const { data, error } = await supabase
@@ -288,10 +287,10 @@ const GymsPage = () => {
                     <TableCell>{gym.address}</TableCell>
                     {userRole === "ADMIN" && <TableCell>{gym.ownerid}</TableCell>}
                     <TableCell>
-                      {gym.rating > 0 ? `${gym.rating} (${gym.reviewCount} отзывов)` : "Нет отзывов"}
+                      {gym.rating > 0 ? `${gym.rating} (${gym.review_count} отзывов)` : "Нет отзывов"}
                     </TableCell>
                     <TableCell>
-                      {gym.workingHours ? `${gym.workingHours.open} - ${gym.workingHours.close}` : "Не указано"}
+                      {gym.working_hours ? `${gym.working_hours.open} - ${gym.working_hours.close}` : "Не указано"}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="outline" size="icon" className="mr-2" onClick={() => openEditDialog(gym)}>

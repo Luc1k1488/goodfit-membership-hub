@@ -8,9 +8,9 @@ export interface User {
   phone: string;
   email?: string;
   role: UserRole;
-  subscriptionId?: string;
-  createdAt: string;
-  profileImage?: string;
+  subscription_id?: string; // Changed from subscriptionId
+  created_at: string; // Changed from createdAt
+  profile_image?: string; // Changed from profileImage
 }
 
 export interface UserProfile extends User {
@@ -39,13 +39,13 @@ export interface Gym {
     lat: number;
     lng: number;
   };
-  mainImage: string;
+  main_image: string; // Changed from mainImage
   images: string[];
-  ownerid: string; // Changed from ownerId to ownerid to match DB
+  ownerid: string; // Confirmed as ownerid to match DB
   rating: number;
-  reviewCount: number;
+  review_count: number; // Changed from reviewCount
   features: string[];
-  workingHours: {
+  working_hours: { // Changed from workingHours
     open: string;
     close: string;
   };
@@ -54,26 +54,26 @@ export interface Gym {
 // Class and schedule types
 export interface FitnessClass {
   id: string;
-  gymId: string; // Internal representation, might need mapping to/from gymid
+  gymid: string; // Changed from gymId to match DB
   title: string;
   description: string;
   instructor: string;
-  startTime: string; // Internal representation, might need mapping to/from starttime
-  endTime: string;
+  starttime: string; // Changed from startTime to match DB
+  end_time: string; // Changed from endTime
   capacity: number;
-  bookedCount: number;
+  booked_count: number; // Changed from bookedCount
   category: string;
 }
 
 // Booking types
 export interface Booking {
   id: string;
-  userId: string; // Changed from userId to user_id to match DB when accessing directly
-  classId: string; // Changed from classId to class_id to match DB when accessing directly
-  gymId: string;
+  user_id: string; // Confirmed as user_id to match DB
+  class_id: string; // Confirmed as class_id to match DB
+  gym_id: string; // Changed from gymId
   status: 'BOOKED' | 'COMPLETED' | 'CANCELLED';
-  dateTime: string; // Changed from dateTime to date_time to match DB when accessing directly
-  createdAt?: string;
+  date_time: string; // Confirmed as date_time to match DB
+  created_at?: string; // Changed from createdAt
   className?: string;
   gymName?: string;
   userName?: string;
@@ -82,15 +82,15 @@ export interface Booking {
     id: string;
     name: string;
     city: string;
-    mainImage: string;
+    main_image: string; // Changed from mainImage
   };
 }
 
 // Review types
 export interface Review {
   id: string;
-  userId: string;
-  gymId: string;
+  user_id: string; // Changed from userId
+  gym_id: string; // Changed from gymId
   userName: string;
   rating: number;
   comment: string;
