@@ -56,7 +56,7 @@ const GymsPage = () => {
     navigate(`/gyms/${gym_id}`);
   };
   
-  // Создаем компоненты для боковой панели и основного контента
+  // Create components for sidebar and main content
   const sidebarContent = (
     <div className="space-y-6">
       <div>

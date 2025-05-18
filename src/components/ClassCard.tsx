@@ -14,12 +14,12 @@ interface ClassCardProps {
 
 export function ClassCard({ fitnessClass, gym, onClick }: ClassCardProps) {
   // Format times for display
-  const start_time = parseISO(fitnessClass.starttime);
-  const end_time = parseISO(fitnessClass.end_time);
+  const startTime = parseISO(fitnessClass.starttime);
+  const endTime = parseISO(fitnessClass.end_time);
   
-  const formatted_date = format(start_time, "EEEE, d MMMM", { locale: ru });
-  const formatted_time = format(start_time, "HH:mm", { locale: ru });
-  const formatted_end_time = format(end_time, "HH:mm", { locale: ru });
+  const formattedDate = format(startTime, "EEEE, d MMMM", { locale: ru });
+  const formattedTime = format(startTime, "HH:mm", { locale: ru });
+  const formattedEndTime = format(endTime, "HH:mm", { locale: ru });
 
   return (
     <Card 
@@ -30,10 +30,10 @@ export function ClassCard({ fitnessClass, gym, onClick }: ClassCardProps) {
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div className="flex-1">
             <div className="text-xs text-muted-foreground mb-1">
-              <span>{formatted_date}</span>
+              <span>{formattedDate}</span>
             </div>
             <div className="text-lg font-bold mb-1">{fitnessClass.title}</div>
-            <div className="text-sm text-muted-foreground mb-2">{formatted_time} - {formatted_end_time}</div>
+            <div className="text-sm text-muted-foreground mb-2">{formattedTime} - {formattedEndTime}</div>
             
             <div className="flex items-center gap-4 mt-2">
               <div className="flex items-center">

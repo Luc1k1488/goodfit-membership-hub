@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +41,7 @@ import {
 
 const PartnerDashboardPage = () => {
   const { currentUser, isLoading } = useAuth();
-  const { gyms, addClass, addGym } = useApp();
+  const { gyms, addGym } = useApp();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState("gyms");
@@ -60,24 +61,27 @@ const PartnerDashboardPage = () => {
     city: "",
     category: ["Фитнес"],
     features: ["Wi-Fi", "Душевые"],
-    main_image: "/lovable-uploads/gym.jpg", // Changed from mainImage
+    main_image: "/lovable-uploads/gym.jpg",
     images: ["/lovable-uploads/gym.jpg"],
-    working_hours: { // Changed from workingHours
+    working_hours: {
       open: "08:00",
       close: "22:00"
-    }
+    },
+    rating: 0,
+    review_count: 0
   });
 
   // New class form state
   const [newClass, setNewClass] = useState({
-    gymid: "", // Changed from gymId
+    gymid: "",
     title: "",
     description: "",
     instructor: "",
-    start_time: "", // Changed from startTime
-    end_time: "", // Changed from endTime
+    starttime: "", // Changed from start_time to match FitnessClass type
+    end_time: "",
     category: "Фитнес",
-    capacity: 20
+    capacity: 20,
+    booked_count: 0
   });
 
   // Check if user is partner
@@ -120,15 +124,15 @@ const PartnerDashboardPage = () => {
           description: gym.description,
           address: gym.address,
           city: gym.city,
-          main_image: gym.main_image, // Changed from mainImage
+          main_image: gym.main_image,
           images: gym.images,
           features: gym.features,
           category: gym.category,
           location: { lat: gym.location?.lat || 0, lng: gym.location?.lng || 0 },
-          working_hours: gym.working_hours, // Changed from workingHours
+          working_hours: gym.working_hours,
           rating: gym.rating,
-          review_count: gym.review_count, // Changed from reviewCount
-          ownerid: gym.ownerid // Changed from ownerId
+          review_count: gym.review_count,
+          ownerid: gym.ownerid
         }));
         
         setPartnerGyms(formattedGyms);
@@ -146,15 +150,15 @@ const PartnerDashboardPage = () => {
           
           const formattedClasses = classesData.map(cls => ({
             id: cls.id,
-            gymid: cls.gymid, // Changed from gymId
+            gymid: cls.gymid,
             title: cls.title,
             description: cls.description,
             instructor: cls.instructor,
-            start_time: cls.starttime, // Changed from startTime
-            end_time: cls.end_time, // Changed from endTime
+            starttime: cls.starttime, // Changed to match FitnessClass type
+            end_time: cls.end_time,
             category: cls.category,
             capacity: cls.capacity,
-            booked_count: cls.booked_count // Changed from bookedCount
+            booked_count: cls.booked_count
           }));
           
           setPartnerClasses(formattedClasses);
@@ -205,7 +209,7 @@ const PartnerDashboardPage = () => {
       const gymToAdd = {
         ...newGym,
         location: { lat: 0, lng: 0 },
-        ownerid: currentUser.id // Changed from ownerId
+        ownerid: currentUser.id
       };
       
       await addGym(gymToAdd);
@@ -220,17 +224,22 @@ const PartnerDashboardPage = () => {
   
   // Handle adding a new class
   const handleAddClass = async () => {
+    if (!useApp().addClass) {
+      console.error("addClass function is not available");
+      return;
+    }
+    
     try {
-      const startDateTime = new Date(newClass.start_time);
+      const startDateTime = new Date(newClass.starttime);
       const endDateTime = new Date(newClass.end_time);
       
       const classToAdd = {
         ...newClass,
-        start_time: startDateTime.toISOString(), // Changed from startTime
-        end_time: endDateTime.toISOString() // Changed from endTime
+        starttime: startDateTime.toISOString(),
+        end_time: endDateTime.toISOString()
       };
       
-      await addClass(classToAdd);
+      await useApp().addClass(classToAdd);
       setClassDialogOpen(false);
       
       // Reload the page to refresh data
@@ -436,8 +445,8 @@ const PartnerDashboardPage = () => {
                       <label className="text-sm font-medium">Дата и время начала</label>
                       <Input 
                         type="datetime-local" 
-                        value={newClass.start_time} 
-                        onChange={e => setNewClass({...newClass, start_time: e.target.value})}
+                        value={newClass.starttime} 
+                        onChange={e => setNewClass({...newClass, starttime: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
@@ -483,7 +492,7 @@ const PartnerDashboardPage = () => {
                   <Button 
                     onClick={handleAddClass} 
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-                    disabled={!newClass.title || !newClass.gymid || !newClass.start_time || !newClass.end_time}
+                    disabled={!newClass.title || !newClass.gymid || !newClass.starttime || !newClass.end_time}
                   >
                     Добавить занятие
                   </Button>
@@ -604,7 +613,7 @@ const PartnerDashboardPage = () => {
                 )
                 .map(cls => {
                   const gymName = partnerGyms.find(gym => gym.id === cls.gymid)?.name || "";
-                  const startTime = parseISO(cls.start_time);
+                  const startTime = parseISO(cls.starttime);
                   const endTime = parseISO(cls.end_time);
                   
                   return (

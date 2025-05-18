@@ -1,6 +1,8 @@
+
 import { createContext, useContext, useState, useEffect } from "react";
-import { Gym, FitnessClass, Booking, Subscription } from "@/types";
+import { Gym, FitnessClass, Booking, Subscription, User } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/context/AuthContext";
 
 // Define the context type
 interface AppContextType {
@@ -8,7 +10,9 @@ interface AppContextType {
   filteredGyms: Gym[];
   subscriptions: Subscription[];
   bookings: Booking[];
-  filterGyms: (filters: { city?: string; category?: string[] }) => void;
+  classes: FitnessClass[];
+  user: User | null;
+  filterGyms: (filters: { city?: string; category?: string[]; search?: string }) => void;
   getGymById: (gymId: string) => Gym | undefined;
   getClassById: (classId: string) => FitnessClass | undefined;
   getGymClasses: (gymId: string) => Promise<FitnessClass[]>;
@@ -20,6 +24,8 @@ interface AppContextType {
   createSubscription: (subscription: Omit<Subscription, 'id'>) => Promise<Subscription | null>;
   updateSubscription: (subscriptionId: string, updates: Partial<Subscription>) => Promise<void>;
   deleteSubscription: (subscriptionId: string) => Promise<boolean>;
+  getUserBookings: () => Promise<void>;
+  addClass: (classData: Omit<FitnessClass, 'id'>) => Promise<FitnessClass | null>;
 }
 
 // Create the context with a default value of null
@@ -27,10 +33,12 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // Create a provider component
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser } = useAuth();
   const [gyms, setGyms] = useState<Gym[]>([]);
   const [filteredGyms, setFilteredGyms] = useState<Gym[]>([]);
-   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [classes, setClasses] = useState<FitnessClass[]>([]);
 
   useEffect(() => {
     const fetchGyms = async () => {
@@ -62,20 +70,55 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const fetchBookings = async () => {
-      const { data, error } = await supabase.from('bookings').select('*');
+    const fetchClasses = async () => {
+      const { data, error } = await supabase.from('classes').select('*');
 
       if (error) {
-        console.error("Error fetching bookings:", error);
+        console.error("Error fetching classes:", error);
       } else {
-        setBookings(data as Booking[]);
+        setClasses(data as FitnessClass[]);
       }
     };
 
-    fetchBookings();
+    fetchClasses();
   }, []);
 
-  const filterGyms = (filters: { city?: string; category?: string[] }) => {
+  const getUserBookings = async () => {
+    if (!currentUser?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*, class:class_id(*), gym:gym_id(*)')
+        .eq('user_id', currentUser.id);
+        
+      if (error) {
+        console.error("Error fetching user bookings:", error);
+        return;
+      }
+      
+      // Transform the data to match our Booking type with nested class and gym
+      const formattedBookings = data.map(booking => ({
+        ...booking,
+        class: booking.class,
+        gym: booking.gym
+      }));
+      
+      setBookings(formattedBookings);
+    } catch (error) {
+      console.error("Error in getUserBookings:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      getUserBookings();
+    } else {
+      setBookings([]);
+    }
+  }, [currentUser?.id]);
+
+  const filterGyms = (filters: { city?: string; category?: string[]; search?: string }) => {
     let filtered = [...gyms];
 
     if (filters.city) {
@@ -87,6 +130,15 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         filters.category?.every((cat) => gym.category.includes(cat))
       );
     }
+    
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter((gym) => 
+        gym.name.toLowerCase().includes(searchLower) || 
+        gym.description.toLowerCase().includes(searchLower) ||
+        gym.address.toLowerCase().includes(searchLower)
+      );
+    }
 
     setFilteredGyms(filtered);
   };
@@ -96,14 +148,14 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const getClassById = (classId: string): FitnessClass | undefined => {
-    return gyms.flatMap(gym => gym.id).find((gymid) => gymid === classId) as unknown as FitnessClass;
+    return classes.find((cls) => cls.id === classId);
   };
 
   const getGymClasses = async (gymId: string): Promise<FitnessClass[]> => {
     const { data, error } = await supabase
       .from('classes')
       .select('*')
-      .eq('gymid', gymId)
+      .eq('gymid', gymId);
 
     if (error) {
       console.error("Error fetching classes:", error);
@@ -114,11 +166,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const bookClass = async (classId: string, gymId: string): Promise<boolean> => {
+    if (!currentUser?.id) return false;
+    
     const { data: bookingData, error: bookingError } = await supabase
       .from('bookings')
       .select('*')
       .eq('class_id', classId)
-      .eq('user_id', supabase.auth.currentUser?.id!)
+      .eq('user_id', currentUser.id)
       .single();
     
     if (bookingError && bookingError.code !== '404') {
@@ -151,7 +205,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       .from('bookings')
       .insert([
         {
-          user_id: supabase.auth.currentUser?.id!,
+          user_id: currentUser.id,
           class_id: classId,
           gym_id: gymId,
           status: 'BOOKED',
@@ -171,7 +225,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       ...prevBookings,
       {
         id: Math.random().toString(), // Temporary ID
-        user_id: supabase.auth.currentUser?.id!,
+        user_id: currentUser.id,
         class_id: classId,
         gym_id: gymId,
         status: 'BOOKED',
@@ -256,6 +310,24 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     return data as Gym;
   };
 
+  const addClass = async (classData: Omit<FitnessClass, 'id'>): Promise<FitnessClass | null> => {
+    const { data, error } = await supabase
+      .from('classes')
+      .insert([classData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding class:", error);
+      return null;
+    }
+
+    // Optimistically update the local state
+    setClasses((prevClasses) => [...prevClasses, data as FitnessClass]);
+
+    return data as FitnessClass;
+  };
+
   const deleteGym = async (gymId: string): Promise<boolean> => {
     const { error } = await supabase
       .from('gyms')
@@ -276,7 +348,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     return true;
   };
 
-   const createSubscription = async (subscription: Omit<Subscription, 'id'>): Promise<Subscription | null> => {
+  const createSubscription = async (subscription: Omit<Subscription, 'id'>): Promise<Subscription | null> => {
     const { data, error } = await supabase
       .from('subscriptions')
       .insert([subscription])
@@ -342,6 +414,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     filteredGyms,
     subscriptions,
     bookings,
+    classes,
+    user: currentUser,
     filterGyms,
     getGymById,
     getClassById,
@@ -354,6 +428,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     createSubscription,
     updateSubscription,
     deleteSubscription,
+    getUserBookings,
+    addClass,
   };
 
   return (
